@@ -1,0 +1,30 @@
+{
+  "id": "bks-er-diagram",
+  "name": "ER Diagram",
+  "author": {
+    "name": "Beekeeper Studio",
+    "url": "https://beekeeperstudio.io"
+  },
+  "description": "Interactive ER Diagram viewer for Beekeeper Studio to visualize and explore relational database schemas",
+  "version": "1.0.0",
+  "icon": "account_tree",
+  "manifestVersion": 1,
+  "capabilities": {
+    "views": [
+      {
+        "id": "main-view",
+        "name": "ER Diagram",
+        "type": "plain-tab",
+        "entry": "dist/index.html"
+      }
+    ],
+    "menu": [
+      {
+        "command": "openMainView",
+        "name": "Open ER Diagram",
+        "view": "main-view",
+        "placement": "menubar.tools"
+      }
+    ]
+  }
+}

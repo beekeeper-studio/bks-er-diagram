@@ -1,0 +1,32 @@
+{
+  "name": "bks-er-diagram",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@beekeeperstudio/plugin": "^1.4.0",
+    "@beekeeperstudio/vite-plugin": "^1.0.3",
+    "@material-symbols/font-400": "^0.38.0",
+    "@pdanpdan/vue-keyboard-trap": "^1.2.0",
+    "lodash": "^4.17.21",
+    "pinia": "^3.0.3",
+    "pluralize": "^8.0.0",
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.20",
+    "@types/node": "^24.6.0",
+    "@types/pluralize": "^0.0.33",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vue/tsconfig": "^0.8.1",
+    "sass": "^1.93.2",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.7",
+    "vue-tsc": "^3.1.0"
+  }
+}

@@ -1,0 +1,16 @@
+@use "theme";
+@use "base";
+@use "components/all";
+@import "normalize.css";
+@import "@material-symbols/font-400/outlined.css";
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  > .er-diagram-visualizer {
+    width: 100%;
+    height: 100%;
+  }
+}
