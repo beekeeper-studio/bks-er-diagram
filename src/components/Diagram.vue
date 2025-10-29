@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { VueFlow, Panel } from "@vue-flow/core";
+import { VueFlow, Panel, useVueFlow } from "@vue-flow/core";
+import ZoomControls from "./ZoomControls.vue";
+import { Background } from "@vue-flow/background";
+
+const {} = useVueFlow("main-diagram");
+
 </script>
 
 <template>
-  <VueFlow class="diagram">
+  <VueFlow class="diagram" id="main-diagram">
+    <Background variant="dots" pattern-color="var(--bg-pattern-color)"/>
     <Panel position="top-left">
       <button class="btn btn-fab btn-flat-2">
         <span class="material-symbols-outlined">menu</span>
@@ -20,20 +26,6 @@ import { VueFlow, Panel } from "@vue-flow/core";
         <span class="title-popup">Redo</span>
       </button>
     </Panel>
-    <Panel position="bottom-right">
-      <button class="btn btn-fab btn-flat-2">
-        <span class="material-symbols-outlined">remove</span>
-        <span class="title-popup">Zoom out</span>
-      </button>
-      <span>100%</span>
-      <button class="btn btn-fab btn-flat-2">
-        <span class="material-symbols-outlined">add</span>
-        <span class="title-popup">Zoom in</span>
-      </button>
-      <button class="btn btn-fab btn-flat-2">
-        <span class="material-symbols-outlined">help</span>
-        <span class="title-popup">Help</span>
-      </button>
-    </Panel>
+    <ZoomControls />
   </VueFlow>
 </template>
