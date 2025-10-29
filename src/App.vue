@@ -1,8 +1,8 @@
 <template>
-  <ERDiagramVisualizer />
+  <Diagram />
 </template>
 
 <script setup lang="ts">
-import ERDiagramVisualizer from './components/ERDiagramVisualizer.vue'
+import Diagram from './components/Diagram.vue'
 </script>
 

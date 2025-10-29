@@ -23,6 +23,14 @@ getAppInfo().then((app) => applyTheme(app.theme));
 // Sync with app theme
 addNotificationListener("themeChanged", (theme) => applyTheme(theme));
 
+if (import.meta.env.DEV) {
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "r") {
+      window.location.reload();
+    }
+  })
+}
+
 const app = createApp(App);
 const pinia = createPinia();
 

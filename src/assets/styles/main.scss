@@ -3,13 +3,19 @@
 @use "components/all";
 @import "normalize.css";
 @import "@material-symbols/font-400/outlined.css";
+@import '@vue-flow/core/dist/style.css';
+
+// /* this contains the default theme, these are optional styles */
+// @import '@vue-flow/core/dist/theme-default.css';
 
 #app {
   height: 100%;
+    width: 70vw;
+    border-right: 1px solid red;
   display: flex;
   flex-direction: column;
 
-  > .er-diagram-visualizer {
+  > .diagram {
     width: 100%;
     height: 100%;
   }

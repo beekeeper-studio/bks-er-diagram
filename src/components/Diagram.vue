@@ -1,12 +1,16 @@
+<script setup lang="ts">
+import { VueFlow, Panel } from "@vue-flow/core";
+</script>
+
 <template>
-  <div class="er-diagram-visualizer">
-    <div class="group-btn menubar">
+  <VueFlow class="diagram">
+    <Panel position="top-left">
       <button class="btn btn-fab btn-flat-2">
         <span class="material-symbols-outlined">menu</span>
         <span class="title-popup" data-position="bottom">Menu</span>
       </button>
-    </div>
-    <div class="group-btn group-history">
+    </Panel>
+    <Panel position="bottom-left">
       <button class="btn btn-fab btn-flat-2">
         <span class="material-symbols-outlined">undo</span>
         <span class="title-popup">Undo</span>
@@ -15,8 +19,8 @@
         <span class="material-symbols-outlined">redo</span>
         <span class="title-popup">Redo</span>
       </button>
-    </div>
-    <div class="group-btn group-navigation">
+    </Panel>
+    <Panel position="bottom-right">
       <button class="btn btn-fab btn-flat-2">
         <span class="material-symbols-outlined">remove</span>
         <span class="title-popup">Zoom out</span>
@@ -30,8 +34,6 @@
         <span class="material-symbols-outlined">help</span>
         <span class="title-popup">Help</span>
       </button>
-    </div>
-  </div>
+    </Panel>
+  </VueFlow>
 </template>
-
-<script setup lang="ts"></script>

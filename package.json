@@ -11,8 +11,10 @@
   "dependencies": {
     "@beekeeperstudio/plugin": "^1.4.0",
     "@beekeeperstudio/vite-plugin": "^1.0.3",
+    "@dagrejs/dagre": "^1.1.5",
     "@material-symbols/font-400": "^0.38.0",
     "@pdanpdan/vue-keyboard-trap": "^1.2.0",
+    "@vue-flow/core": "^1.47.0",
     "lodash": "^4.17.21",
     "pinia": "^3.0.3",
     "pluralize": "^8.0.0",
