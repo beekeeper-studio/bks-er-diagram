@@ -35,6 +35,7 @@ $btn-border-radius: 8px;
   text-align: center;
   cursor: pointer;
   gap: 0.25rem;
+  user-select: none;
 
   &:hover,
   &:focus {
@@ -79,22 +80,27 @@ $btn-border-radius: 8px;
     user-select: none;
     opacity: 0;
     pointer-events: none;
+
     // Top is default
-    &:not([data-position]), &[data-position="top"] {
+    &:not([data-position]),
+    &[data-position="top"] {
       bottom: calc(100% + 0.5rem);
       left: 50%;
       transform: translateX(-50%);
     }
+
     &[data-position="left"] {
       top: 50%;
       right: calc(100% + 0.5rem);
       transform: translateY(-50%);
     }
+
     &[data-position="right"] {
       top: 50%;
       left: calc(100% + 0.5rem);
       transform: translateY(-50%);
     }
+
     &[data-position="bottom"] {
       top: calc(100% + 0.5rem);
       left: 50%;
@@ -131,15 +137,17 @@ $btn-border-radius: 8px;
 }
 
 .btn.btn-flat {
-  --btn-bg-color: rgb(from var(--theme-base) r g b / 6%);
-  --btn-text-color: var(--theme-base);
+  --btn-bg-color: color-mix(in srgb, var(--theme-base) 6%, var(--query-editor-bg));
+  --btn-text-color: var(--text);
   --btn-hover-bg-color: rgb(from var(--theme-base) r g b / 12%);
   --btn-hover-text-color: var(--theme-base);
 }
 
 .btn.btn-flat-2 {
   --btn-bg-color: var(--query-editor-bg);
-  --btn-text-color: color-mix(in srgb, var(--text-dark) 90%, var(--query-editor-bg));
+  --btn-text-color: color-mix(in srgb,
+      var(--text-dark) 90%,
+      var(--query-editor-bg));
   --btn-hover-bg-color: color-mix(in srgb,
       var(--theme-base) 10%,
       var(--query-editor-bg));
@@ -153,7 +161,7 @@ $btn-border-radius: 8px;
   padding: 0;
 
   .material-symbols-outlined {
-    font-size: 1.75em;
+    font-size: 1.5em;
   }
 }
 

@@ -3,6 +3,8 @@
 
   .zoom-controls {
     display: flex;
+    background-color: color-mix(in srgb, var(--theme-base) 6%, var(--query-editor-bg));
+    border-radius: 8px;
 
     .zoom-input {
       background-color: transparent;
