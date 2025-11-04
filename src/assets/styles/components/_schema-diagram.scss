@@ -1,0 +1,41 @@
+.schema-diagram {
+  .diagram {
+    position: relative;
+
+    .zoom-controls {
+      display: flex;
+      background-color: color-mix(in srgb,
+          var(--theme-base) 6%,
+          var(--query-editor-bg));
+      border-radius: 8px;
+
+      .zoom-input {
+        background-color: transparent;
+        color: var(--text-dark);
+        border: 1px solid transparent;
+        border-radius: 8px;
+        height: 2rem;
+        width: 3rem;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+
+        &:focus,
+        &:hover {
+          border-color: var(--border-color);
+        }
+
+        &:focus {
+          background-color: var(--theme-bg);
+        }
+      }
+    }
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(10px);
+    z-index: 4;
+  }
+}

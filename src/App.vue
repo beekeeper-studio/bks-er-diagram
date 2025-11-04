@@ -1,149 +1,114 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from "vue";
+import { nextTick, onMounted, onUnmounted, ref } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
 import {
-  type ColumnReference,
-  type EntitySchema,
-  getHandleId,
+  type ColumnKey,
   useSchemaDiagram,
 } from "@/composables/useSchemaDiagram";
 import {
-  getColumns,
-  getConnectionInfo,
-  getTableKeys,
-  getTables,
+  addNotificationListener,
+  removeNotificationListener,
 } from "@beekeeperstudio/plugin";
-
-const ENTITY_BATCH_SIZE = 20;
+import { useSchema } from "./composables/useSchema";
 
 const diagram = useSchemaDiagram();
-const progress = ref(0);
+const { stream, progress } = useSchema();
+const state = ref<"uninitialized" | "initializing" | "aborting" | "ready">(
+  "uninitialized",
+);
 
-onMounted(async () => {
-  const connection = await getConnectionInfo();
-  const tables = await getTables(connection.defaultSchema);
+let abortController: AbortController | undefined;
 
-  let entityBatch: EntitySchema[] = [];
-  let referenceBatch: ColumnReference[] = [];
+function abort() {
+  state.value = "aborting";
+  abortController?.abort();
+}
 
-  async function flushEntities() {
-    if (entityBatch.length === 0) {
-      return;
+async function initialize() {
+  if (state.value !== "uninitialized" && state.value !== "ready") {
+    console.warn(
+      "Can only initialize when the state is `ready` or `uninitialized`.",
+    );
+    return;
+  }
+
+  state.value = "initializing";
+
+  try {
+    const allKeys: ColumnKey[] = [];
+
+    abortController = new AbortController();
+
+    const iter = stream({ signal: abortController.signal });
+
+    for await (const { entities, keys } of iter) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      allKeys.push(...keys);
+      await diagram.addEntities(entities);
+      await nextTick();
+      diagram.layout();
     }
-    await diagram.addEntities(entityBatch);
+
+    await diagram.addKeys(allKeys);
     await nextTick();
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
     diagram.layout();
-    entityBatch = [];
+  } catch (e) {
+    // FIXME show helpful error
+    console.error(e);
   }
 
-  async function flushReferences() {
-    const availableReferences = referenceBatch;
-    if (availableReferences.length === 0) {
-      return;
-    }
-    await diagram.addReferences(availableReferences);
-    await nextTick();
-    diagram.layout();
-    referenceBatch = referenceBatch.filter((reference) => {
-      return !availableReferences.includes(reference);
-    });
-  }
+  state.value = "ready";
+}
 
-  for (let i = 0; i < tables.length; i++) {
-    const table = tables[i]!;
-
-    const entity: EntitySchema = {
-      name: table.name,
-      schema: table.schema,
-      type: "table",
-      columns: [],
-    };
-
-    try {
-      entity.columns = await getColumns(table.name, table.schema).then(
-        (columns) => {
-          return columns.map((column) => ({
-            name: column.name,
-            type: column.type,
-            handleId: getHandleId({
-              entity,
-              column: {
-                name: column.name,
-              },
-            }),
-          }));
-        },
-      );
-    } catch (error) {
-      // TODO show helpful error here
-      console.error(error);
-    }
-
-    entityBatch.push(entity);
-
-    if (entityBatch.length >= ENTITY_BATCH_SIZE) {
-      await flushEntities();
-    }
-
-    progress.value = Math.round(((i + 0.5) / tables.length) * 100);
-
-    try {
-      const keys = await getTableKeys(table.name, table.schema);
-      for (const key of keys) {
-        referenceBatch.push({
-          from: {
-            entity: {
-              name: key.fromTable,
-              schema: key.fromSchema,
-            },
-            // FIXME wont work for composite keys
-            column: { name: key.fromColumn.toString() },
-          },
-          to: {
-            entity: {
-              name: key.toTable,
-              schema: key.toSchema,
-            },
-            // FIXME wont work for composite keys
-            column: { name: key.toColumn.toString() },
-          },
-        });
-      }
-    } catch (error) {
-      // TODO show helpful error here
-      console.error(error);
-    }
-
-    progress.value = Math.round(((i + 1) / tables.length) * 100);
-  }
-
-  await flushEntities();
-  await flushReferences();
-  await nextTick();
-
-  diagram.layout();
+onMounted(() => {
+  initialize();
+  addNotificationListener("tablesChanged", initialize);
 });
+
+onUnmounted(() => {
+  removeNotificationListener("tablesChanged", initialize);
+});
+
+function nothing() { }
 </script>
 
 <template>
-  <div class="schema-diagram-container" style="position: relative">
-    <SchemaDiagram />
-    <div v-if="progress < 100" style="
+  <div class="schema-diagram-container">
+    <SchemaDiagram :disabled="state === 'initializing' || state === 'aborting'">
+      <template #menu>
+        <button @click="nothing()" style="height: 2rem; font-weight: 500" class="btn btn-flat">
+          <span class="material-symbols-outlined">refresh</span>
+          <span>Nothing yet</span>
+        </button>
+      </template>
+    </SchemaDiagram>
+    <div v-if="state === 'initializing' || state === 'aborting'" class="loading-progress"
+      :style="{ width: `${progress * 100}%` }" />
+    <div v-if="state === 'initializing' || state === 'aborting'" style="
         position: absolute;
-        bottom: 2rem;
+        top: 1rem;
         left: 50%;
         transform: translateX(-50%);
-        text-align: center;
-        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
         background-color: color-mix(
           in srgb,
           var(--theme-base) 10%,
           var(--query-editor-bg)
         );
-        border-radius: 6px;
+        padding: 1rem;
+        border-radius: 8px;
         box-shadow: 0 0 0.5rem var(--query-editor-bg);
       ">
-      Loading {{ progress }}%
+      <span>Loading schema...</span>
+      <button @click="abort" :disabled="state === 'aborting'" class="btn btn-flat">
+        {{ state === "aborting" ? "Cancelling" : "Cancel" }}
+      </button>
     </div>
   </div>
 </template>

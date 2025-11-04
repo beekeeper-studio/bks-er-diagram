@@ -3,51 +3,51 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { useLayout } from "./useLayout";
 
-export type EntityIdentifier = {
+export type Entity = {
   name: string;
   schema?: string;
 };
 
-export type ColumnReferenceIdentifier = {
-  entity: EntityIdentifier;
-  column: {
-    name: string;
-  };
+export type Column = {
+  entity: Entity;
+  name: string;
 };
 
-export type EntitySchema = EntityIdentifier & {
+export type ColumnStructure = Column & {
+  type?: string;
+  handleId: string;
+  hasReferences: boolean;
+};
+
+export type EntityStructure = Entity & {
   type: "table";
-  columns: {
-    name: string;
-    type?: string;
-    handleId: string;
-  }[];
+  columns: ColumnStructure[];
 };
 
-export type ColumnReference = {
-  from: ColumnReferenceIdentifier;
-  to: ColumnReferenceIdentifier;
+export type ColumnKey = {
+  from: Column;
+  to: Column;
 };
 
-function getNodeId(entity: EntityIdentifier): string {
+function getNodeId(entity: Entity): string {
   return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
-function getEdgeId({ from, to }: ColumnReference): string {
-  if (from.entity.schema) {
-    return `${from.entity.schema}.${from.entity.name}.${from.column.name} -> ${to.entity.schema}.${to.entity.name}.${to.column.name}`;
+function getEdgeId({ from: fromColumn, to: toColumn }: ColumnKey): string {
+  if (fromColumn.entity.schema) {
+    return `${fromColumn.entity.schema}.${fromColumn.entity.name}.${fromColumn.name} -> ${toColumn.entity.schema}.${toColumn.entity.name}.${toColumn.name}`;
   }
-  return `${from.entity.name}.${from.column.name} -> ${to.entity.name}.${to.column.name}`;
+  return `${fromColumn.entity.name}.${fromColumn.name} -> ${toColumn.entity.name}.${toColumn.name}`;
 }
 
-export function getHandleId(column: ColumnReferenceIdentifier): string {
+export function getHandleId(column: Column): string {
   if (column.entity.schema) {
-    return `${column.entity.schema}.${column.entity.name}.${column.column.name}`;
+    return `${column.entity.schema}.${column.entity.name}.${column.name}`;
   }
-  return `${column.entity.name}.${column.column.name}`;
+  return `${column.entity.name}.${column.name}`;
 }
 
-function generateNodes(entities: EntitySchema[]): Node<EntitySchema>[] {
+function generateNodes(entities: EntityStructure[]): Node<EntityStructure>[] {
   return entities.map((entity) => {
     return {
       id: getNodeId(entity),
@@ -58,7 +58,7 @@ function generateNodes(entities: EntitySchema[]): Node<EntitySchema>[] {
   });
 }
 
-function generateEdges(references: ColumnReference[]): Edge[] {
+function generateEdges(references: ColumnKey[]): Edge[] {
   return references.map((reference) => {
     return {
       id: getEdgeId(reference),
@@ -95,25 +95,23 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
    * Since we do some calculations when updating the entities, it is
    * recommended to use this as a readonly ref and use `add` to modify it.
    **/
-  const entitiesRef = ref<EntitySchema[]>([]);
+  const entitiesRef = ref<EntityStructure[]>([]);
 
   /**
    * Add entities to the diagram. Use `await` or `.then()` to wait for the
    * nodes to be added.
    **/
-  async function addEntities(entities: EntitySchema | EntitySchema[]) {
+  async function addEntities(entities: EntityStructure | EntityStructure[]) {
     if (!Array.isArray(entities)) {
       entities = [entities];
     }
     entitiesRef.value.push(...entities);
     const nodes = generateNodes(entities);
     addNodes(nodes);
-    await waitForNodesChange();
+    // await waitForNodesChange();
   }
 
-  async function addReferences(
-    references: ColumnReference | ColumnReference[],
-  ) {
+  async function addKeys(references: ColumnKey | ColumnKey[]) {
     if (!Array.isArray(references)) {
       references = [references];
     }
@@ -166,7 +164,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     nodes,
     edges,
     addEntities,
-    addReferences,
+    addKeys,
     $reset,
     fitView,
     zoomLevel,

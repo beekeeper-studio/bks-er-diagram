@@ -137,9 +137,13 @@ $btn-border-radius: 8px;
 }
 
 .btn.btn-flat {
-  --btn-bg-color: color-mix(in srgb, var(--theme-base) 6%, var(--query-editor-bg));
+  --btn-bg-color: color-mix(in srgb,
+      var(--theme-base) 6%,
+      var(--query-editor-bg));
   --btn-text-color: var(--text);
-  --btn-hover-bg-color: rgb(from var(--theme-base) r g b / 12%);
+  --btn-hover-bg-color: color-mix(in srgb,
+      var(--theme-base) 12%,
+      var(--query-editor-bg));
   --btn-hover-text-color: var(--theme-base);
 }
 
