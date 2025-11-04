@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { VueFlow, Panel, Handle, Position } from "@vue-flow/core";
+import { VueFlow, Panel, Handle, Position, useVueFlow } from "@vue-flow/core";
 import ZoomControls from "./ZoomControls.vue";
 import { Background } from "@vue-flow/background";
 import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
 import { ref, useTemplateRef } from "vue";
 import { vOnClickOutside } from "@vueuse/components";
+import FloatingEdge from "@/components/FloatingEdge.vue";
 
 defineProps({
   disabled: Boolean,
 });
 
 const diagram = useSchemaDiagram();
+const { nodes } = useVueFlow();
 const showMenu = ref(false);
 
 const menuBtn = useTemplateRef<HTMLButtonElement>("menuBtn");
@@ -24,6 +26,10 @@ function hideMenu() {
   <div class="schema-diagram">
     <VueFlow class="diagram" :min-zoom="0.01" :nodes-connectable="false" :nodes="diagram.nodes" :edges="diagram.edges">
       <Background variant="dots" pattern-color="var(--bg-pattern-color)" />
+
+      <template #edge-floating="props">
+        <FloatingEdge v-bind="props" :nodes="nodes" />
+      </template>
 
       <template #node-table="table">
         <div style="

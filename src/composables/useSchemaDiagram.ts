@@ -66,7 +66,7 @@ function generateEdges(references: ColumnKey[]): Edge[] {
       target: getNodeId(reference.to.entity),
       sourceHandle: `source-${getHandleId(reference.from)}`,
       targetHandle: `target-${getHandleId(reference.to)}`,
-      type: "smoothstep",
+      type: "floating",
     };
   });
 }
@@ -85,7 +85,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomOut,
     zoomTo: vueFlowZoomTo,
     onNodesChange,
-    onEdgesChange,
+    getNodes,
     onError,
   } = useVueFlow();
 
@@ -172,5 +172,6 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomOut,
     zoomTo,
     layout,
+    getNodes,
   };
 });
