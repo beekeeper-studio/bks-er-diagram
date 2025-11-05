@@ -22,7 +22,7 @@ export function useLayout() {
     dagreGraph.setDefaultEdgeLabel(() => ({}));
 
     // const isHorizontal = dir === "LR";
-    dagreGraph.setGraph({ rankdir: dir });
+    dagreGraph.setGraph({ rankdir: "TB",ranker: 'longest-path', align: 'UR', nodesep: 100, acyclicer: "greedy"});
 
     direction.value = dir;
 
