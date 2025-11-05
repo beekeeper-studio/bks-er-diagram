@@ -24,20 +24,27 @@ export type EntityStructure = Entity & {
   columns: ColumnStructure[];
 };
 
-export type ColumnKey = {
+export type ColumnReference = {
   from: Column;
   to: Column;
 };
+
+export type NodeData = EntityStructure;
+
+export type EdgeData = ColumnReference;
 
 function getNodeId(entity: Entity): string {
   return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
-function getEdgeId({ from: fromColumn, to: toColumn }: ColumnKey): string {
+function getEdgeId({
+  from: fromColumn,
+  to: toColumn,
+}: ColumnReference): string {
   if (fromColumn.entity.schema) {
-    return `${fromColumn.entity.schema}.${fromColumn.entity.name}.${fromColumn.name} -> ${toColumn.entity.schema}.${toColumn.entity.name}.${toColumn.name}`;
+    return `${fromColumn.entity.schema}.${fromColumn.entity.name}.${fromColumn.name}->${toColumn.entity.schema}.${toColumn.entity.name}.${toColumn.name}`;
   }
-  return `${fromColumn.entity.name}.${fromColumn.name} -> ${toColumn.entity.name}.${toColumn.name}`;
+  return `${fromColumn.entity.name}.${fromColumn.name}->${toColumn.entity.name}.${toColumn.name}`;
 }
 
 export function getHandleId(column: Column): string {
@@ -47,7 +54,7 @@ export function getHandleId(column: Column): string {
   return `${column.entity.name}.${column.name}`;
 }
 
-function generateNodes(entities: EntityStructure[]): Node<EntityStructure>[] {
+function generateNodes(entities: EntityStructure[]): Node<NodeData>[] {
   return entities.map((entity) => {
     return {
       id: getNodeId(entity),
@@ -58,14 +65,15 @@ function generateNodes(entities: EntityStructure[]): Node<EntityStructure>[] {
   });
 }
 
-function generateEdges(references: ColumnKey[]): Edge[] {
+function generateEdges(references: ColumnReference[]): Edge<EdgeData>[] {
   return references.map((reference) => {
     return {
       id: getEdgeId(reference),
       source: getNodeId(reference.from.entity),
       target: getNodeId(reference.to.entity),
-      sourceHandle: `source-${getHandleId(reference.from)}`,
-      targetHandle: `target-${getHandleId(reference.to)}`,
+      data: reference,
+      // sourceHandle: `source-${getHandleId(reference.from)}`,
+      // targetHandle: `target-${getHandleId(reference.to)}`,
       type: "floating",
     };
   });
@@ -84,9 +92,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomIn,
     zoomOut,
     zoomTo: vueFlowZoomTo,
-    onNodesChange,
     getNodes,
-    onError,
   } = useVueFlow();
 
   const { layout: layoutLayout } = useLayout();
@@ -108,38 +114,13 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     entitiesRef.value.push(...entities);
     const nodes = generateNodes(entities);
     addNodes(nodes);
-    // await waitForNodesChange();
   }
 
-  async function addKeys(references: ColumnKey | ColumnKey[]) {
+  async function addKeys(references: ColumnReference | ColumnReference[]) {
     if (!Array.isArray(references)) {
       references = [references];
     }
     addEdges(generateEdges(references));
-  }
-
-  function waitForNodesChange() {
-    return new Promise<void>((resolve, reject) => {
-      let changeWatcher: { off: () => void } | null = null;
-      let errorWatcher: { off: () => void } | null = null;
-
-      const cleanup = () => {
-        changeWatcher?.off();
-        changeWatcher = null;
-        errorWatcher?.off();
-        errorWatcher = null;
-      };
-
-      changeWatcher = onNodesChange(() => {
-        cleanup();
-        resolve();
-      });
-
-      errorWatcher = onError((err: unknown) => {
-        cleanup();
-        reject(err ?? new Error("Unknown error"));
-      });
-    });
   }
 
   function $reset() {

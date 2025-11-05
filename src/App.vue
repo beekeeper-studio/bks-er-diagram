@@ -2,7 +2,7 @@
 import { nextTick, onMounted, onUnmounted, ref } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
 import {
-  type ColumnKey,
+  type ColumnReference,
   useSchemaDiagram,
 } from "@/composables/useSchemaDiagram";
 import {
@@ -35,14 +35,13 @@ async function initialize() {
   state.value = "initializing";
 
   try {
-    const allKeys: ColumnKey[] = [];
+    const allKeys: ColumnReference[] = [];
 
     abortController = new AbortController();
 
     const iter = stream({ signal: abortController.signal });
 
     for await (const { entities, keys } of iter) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
       allKeys.push(...keys);
       await diagram.addEntities(entities);
       await nextTick();
@@ -64,6 +63,7 @@ async function initialize() {
 
 onMounted(() => {
   initialize();
+  /** @ts-expect-error FIXME not fully typed */
   addNotificationListener("tablesChanged", initialize);
 });
 
@@ -88,9 +88,9 @@ function nothing() { }
       :style="{ width: `${progress * 100}%` }" />
     <div v-if="state === 'initializing' || state === 'aborting'" style="
         position: absolute;
-        top: 1rem;
+        top: 50%;
         left: 50%;
-        transform: translateX(-50%);
+        transform: translateX(-50%) translateY(-50%);
         display: flex;
         flex-direction: column;
         justify-content: center;

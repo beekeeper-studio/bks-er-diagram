@@ -30,6 +30,15 @@
         }
       }
     }
+
+    .panel {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .edge-path {
+      stroke: var(--edge-stroke);
+    }
   }
 
   .overlay {

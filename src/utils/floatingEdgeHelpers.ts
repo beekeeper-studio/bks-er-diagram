@@ -1,8 +1,13 @@
+import {
+  getHandleId,
+  type Column,
+  type EdgeData,
+} from "@/composables/useSchemaDiagram";
 import { Position, type GraphNode } from "@vue-flow/core";
 import _ from "lodash";
 
 // returns the position (top,right,bottom or right) passed node compared to
-function getParams(nodeA: GraphNode, nodeB: GraphNode) {
+function getParams(nodeA: GraphNode, nodeB: GraphNode, column: Column) {
   const centerA = getNodeCenter(nodeA);
   const centerB = getNodeCenter(nodeB);
 
@@ -19,15 +24,25 @@ function getParams(nodeA: GraphNode, nodeB: GraphNode) {
     position = centerA.y > centerB.y ? Position.Top : Position.Bottom;
   }
 
-  const { x, y } = getHandleCoordsByPosition(nodeA, position);
+  const { x, y } = getHandleCoordsByPosition(nodeA, position, column);
   return { x, y, position };
 }
 
-function getHandleCoordsByPosition(node: GraphNode, handlePosition: Position) {
+function getHandleCoordsByPosition(
+  node: GraphNode,
+  handlePosition: Position,
+  column: Column,
+) {
   // all handles are from type source, that's why we use handleBounds.source here
-  const handle = node.handleBounds.source!.find(
-    (h) => h.position === handlePosition,
-  );
+  const handle = node.handleBounds.source!.find((h) => {
+    // Each table column has left/right handle. We need to find which column
+    // we are targetting by the id.
+    if (handlePosition === Position.Left || handlePosition === Position.Right) {
+      return h.id === `${handlePosition}-${getHandleId(column)}`;
+    }
+
+    return h.position === handlePosition;
+  });
 
   if (!handle) {
     return { x: 0, y: 0 };
@@ -68,9 +83,21 @@ function getNodeCenter(node: GraphNode) {
 }
 
 // returns the parameters (sx, sy, tx, ty, sourcePos, targetPos) you need to create an edge
-export function getEdgeParams(source: GraphNode, target: GraphNode) {
-  const { x: sx, y: sy, position: sourcePos } = getParams(source, target);
-  const { x: tx, y: ty, position: targetPos } = getParams(target, source);
+export function getEdgeParams(
+  source: GraphNode,
+  target: GraphNode,
+  data: EdgeData,
+) {
+  const {
+    x: sx,
+    y: sy,
+    position: sourcePos,
+  } = getParams(source, target, data.from);
+  const {
+    x: tx,
+    y: ty,
+    position: targetPos,
+  } = getParams(target, source, data.to);
 
   return {
     sx,

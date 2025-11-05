@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Panel } from "@vue-flow/core";
 import _ from "lodash";
 import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
 
@@ -16,7 +15,7 @@ function handleChangeZoomLevel(e: Event) {
 </script>
 
 <template>
-  <Panel position="bottom-right" class="zoom-controls">
+  <div class="zoom-controls">
     <button class="btn btn-fab btn-flat" @click="diagram.zoomOut()">
       <span class="material-symbols-outlined">remove</span>
       <span class="title-popup">Zoom out</span>
@@ -27,9 +26,5 @@ function handleChangeZoomLevel(e: Event) {
       <span class="material-symbols-outlined">add</span>
       <span class="title-popup">Zoom in</span>
     </button>
-    <button class="btn btn-fab btn-flat">
-      <span class="material-symbols-outlined">help</span>
-      <span class="title-popup">Help</span>
-    </button>
-  </Panel>
+  </div>
 </template>

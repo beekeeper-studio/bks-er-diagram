@@ -6,11 +6,11 @@ import {
 } from "@beekeeperstudio/plugin";
 import {
   getHandleId,
-  type ColumnKey,
+  type ColumnReference,
   type ColumnStructure,
   type EntityStructure,
 } from "./useSchemaDiagram";
-import { computed, ref, shallowRef } from "vue";
+import { computed, shallowRef } from "vue";
 import _ from "lodash";
 
 const defaultStreamOptions = {
@@ -48,12 +48,12 @@ export function useSchema() {
   /** Use this to load the entities and keys in batches.  */
   async function* stream(options?: SchemaStreamOptions): AsyncGenerator<{
     entities: EntityStructure[];
-    keys: ColumnKey[];
+    keys: ColumnReference[];
   }> {
     throwIfAborted(options?.signal);
 
     let entityBatch: EntityStructure[] = [];
-    let referenceBatch: ColumnKey[] = [];
+    let referenceBatch: ColumnReference[] = [];
 
     const mergedOptions = _.merge(defaultStreamOptions, options);
 
@@ -108,7 +108,7 @@ export function useSchema() {
         try {
           const keys = await getTableKeys(entity.name, entity.schema);
           for (const key of keys) {
-            const cKey: ColumnKey = {
+            const cKey: ColumnReference = {
               from: {
                 entity: {
                   name: key.fromTable,
