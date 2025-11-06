@@ -3,7 +3,7 @@ import { VueFlow, Panel } from "@vue-flow/core";
 import ZoomControls from "./ZoomControls.vue";
 import { Background } from "@vue-flow/background";
 import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
-import { ref, useTemplateRef } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import { vOnClickOutside } from "@vueuse/components";
 import FloatingEdge from "@/components/FloatingEdge.vue";
 import EntityNode from "@/components/EntityNode.vue";
@@ -23,8 +23,10 @@ function hideMenu() {
 </script>
 
 <template>
-  <div class="schema-diagram">
-    <VueFlow class="diagram" :min-zoom="0.01" :nodes-connectable="false" :nodes="diagram.nodes" :edges="diagram.edges">
+  <div class="schema-diagram" :style="{
+    '--thickness-multipler': diagram.thicknessMultipler,
+  }">
+    <VueFlow class="diagram" :min-zoom="0.01" :nodes="diagram.nodes" :edges="diagram.edges">
       <Background variant="dots" pattern-color="var(--bg-pattern-color)" />
 
       <template #edge-floating="props">

@@ -17,6 +17,9 @@ export type ColumnStructure = Column & {
   type?: string;
   handleId: string;
   hasReferences: boolean;
+  primaryKey: boolean;
+  foreignKey: boolean;
+  ordinalPosition: number;
 };
 
 export type EntityStructure = Entity & {
@@ -72,12 +75,11 @@ function generateEdges(references: ColumnReference[]): Edge<EdgeData>[] {
       source: getNodeId(reference.from.entity),
       target: getNodeId(reference.to.entity),
       data: reference,
-      // sourceHandle: `source-${getHandleId(reference.from)}`,
-      // targetHandle: `target-${getHandleId(reference.to)}`,
       type: "floating",
     };
   });
 }
+// public.payment.customer_id->public.customer.customer_id
 
 export const useSchemaDiagram = defineStore("schema-diagram", () => {
   const {
@@ -93,6 +95,8 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomOut,
     zoomTo: vueFlowZoomTo,
     getNodes,
+    getSelectedNodes,
+    maxZoom,
   } = useVueFlow();
 
   const { layout: layoutLayout } = useLayout();
@@ -132,6 +136,8 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     () => Math.round(viewport.value.zoom * 100) + "%",
   );
 
+  const zoomValue = computed(() => viewport.value.zoom);
+
   function zoomTo(zoom: number) {
     vueFlowZoomTo(zoom / 100);
   }
@@ -139,6 +145,36 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
   function layout() {
     setNodes(layoutLayout(nodes.value, edges.value, "LR"));
   }
+
+  const selectedNodes = computed<string[]>(() =>
+    getSelectedNodes.value.map((node) => node.id),
+  );
+
+  /**
+   * You can make things thicker when user zooms out with this multipler. To
+   * use, multiply the desired thickness with this multiplier.
+   *
+   * @example
+   *
+   * - My border is 2px thick
+   * - But when zoomed out, it's hardly visible
+   *
+   * No worries!
+   *
+   * ```html
+   * <div class="node" :style="{ 'border-width': 'calc(2px * ${thicknessMultipler})' }"></div>
+   * ```
+   */
+  const thicknessMultipler = computed(() => {
+    // https://www.desmos.com/calculator/yyzftehsmc
+    //
+    // x = 1/y - 1/2 + 0.95
+    //
+    // where:
+    // x = multiplier
+    // y = zoom
+    return 1 / viewport.value.zoom - 1 / 2 + 0.95;
+  });
 
   return {
     entities: entitiesRef,
@@ -148,11 +184,14 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     addKeys,
     $reset,
     fitView,
+    zoomValue,
     zoomLevel,
     zoomIn,
     zoomOut,
     zoomTo,
     layout,
     getNodes,
+    selectedNodes,
+    thicknessMultipler,
   };
 });

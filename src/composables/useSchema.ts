@@ -3,6 +3,7 @@ import {
   getConnectionInfo,
   getTableKeys,
   getTables,
+  request,
 } from "@beekeeperstudio/plugin";
 import {
   getHandleId,
@@ -92,9 +93,26 @@ export function useSchema() {
                 name: column.name,
               }),
               hasReferences: false,
+              ordinalPosition: column.ordinalPosition,
+              primaryKey: false,
+              foreignKey: false,
             };
             columnsMap.set(column.name, columnStructure);
             structure.columns.push(columnStructure);
+          });
+
+          const pks = await request({
+            name: "getPrimaryKeys",
+            args: {
+              table: entity.name,
+              schema: entity.schema,
+            },
+          })
+          pks.forEach((pk) => {
+            const column = columnsMap.get(pk.name);
+            if (column) {
+              column.primaryKey = true;
+            }
           });
         } catch (error) {
           // TODO show helpful error here
@@ -133,6 +151,16 @@ export function useSchema() {
               thisColumn.hasReferences = true;
             }
             referenceBatch.push(cKey);
+
+            if (key.direction === "outgoing") {
+              const fromColumns = Array.isArray(key.fromColumn) ? key.fromColumn : [key.fromColumn];
+              fromColumns.forEach((column) => {
+                const columnStructure = columnsMap.get(column.toString());
+                if (columnStructure) {
+                  columnStructure.foreignKey = true;
+                }
+              })
+            }
           }
         } catch (error) {
           // TODO show helpful error here

@@ -2,11 +2,20 @@
 
 :root {
   --theme-scrollbar-track: transparent;
-  --theme-scrollbar-thumb: color-mix(in srgb, var(--theme-base) 20%, var(--theme-bg) 80%);
+  --theme-scrollbar-thumb: color-mix(in srgb,
+      var(--theme-base) 20%,
+      var(--theme-bg) 80%);
   --text-muted: color-mix(in srgb, var(--theme-base) 20%, var(--theme-bg) 80%);
-  --text-muted-2: color-mix(in srgb, var(--theme-base) 30%, var(--theme-bg) 70%);
-  --focus-visible-outline-color: color-mix(in srgb, var(--theme-base) 50%, var(--theme-bg));
+  --text-muted-2: color-mix(in srgb,
+      var(--theme-base) 30%,
+      var(--theme-bg) 70%);
+  --focus-visible-outline-color: color-mix(in srgb,
+      var(--theme-base) 50%,
+      var(--theme-bg));
   --focus-visible-outline: var(--focus-visible-outline-color) auto 1px;
-  --bg-pattern-color: color-mix(in srgb, var(--theme-base) 30%, var(--theme-bg));
-  --edge-stroke: color-mix(in srgb, var(--theme-base) 40%, var(--theme-bg));
+  --bg-pattern-color: color-mix(in srgb,
+      var(--theme-base) 30%,
+      var(--theme-bg));
+  --edge-stroke: color-mix(in srgb, var(--theme-base) 15%, var(--theme-bg));
+  --edge-width: 2px;
 }

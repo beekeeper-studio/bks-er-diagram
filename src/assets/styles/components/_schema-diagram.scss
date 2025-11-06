@@ -1,4 +1,6 @@
 .schema-diagram {
+  --thickness-multipler: 1;
+
   .diagram {
     position: relative;
 
@@ -35,10 +37,60 @@
       display: flex;
       gap: 0.5rem;
     }
+  }
 
-    .edge-path {
-      stroke: var(--edge-stroke);
+  .entity-node {
+    background-color: color-mix(in srgb,
+        var(--theme-base) 6%,
+        var(--query-editor-bg));
+    color: var(--text);
+    border-radius: 6px;
+    padding-bottom: 1rem;
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    li {
+      &:nth-child(odd) {
+        background-color: color-mix(in srgb,
+            var(--theme-base) 4%,
+            var(--query-editor-bg));
+      }
+
+      &.primary-key .key-icon {
+        color: var(--theme-secondary);
+      }
+
+      &.foreign-key .key-icon {
+        color: var(--theme-primary);
+      }
     }
+
+    &.highlighted {
+      outline-style: dashed;
+      outline-color: color-mix(in srgb, var(--theme-base) calc(50%), var(--theme-bg));
+      outline-width: calc(2px * var(--thickness-multipler));
+    }
+  }
+
+  .selected {
+    &>.entity-node {
+      outline-style: solid;
+      outline-color: color-mix(in srgb,
+          var(--theme-primary) 70%,
+          var(--theme-bg));
+      outline-width: calc(2px * var(--thickness-multipler));
+      outline-offset: calc(2px * var(--thickness-multipler));
+    }
+  }
+
+  .highlighted {
+    --edge-stroke: color-mix(in srgb, var(--theme-base) 50%, var(--theme-bg));
+  }
+
+  .edge-path {
+    stroke: var(--edge-stroke);
+    stroke-width: calc(var(--edge-width) * var(--thickness-multipler));
   }
 
   .overlay {
