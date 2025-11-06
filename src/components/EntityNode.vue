@@ -2,7 +2,7 @@
   <div class="entity-node" :class="{ highlighted }">
     <Handle type="source" :position="Position.Top" :connectable="false" />
     <Handle type="source" :position="Position.Bottom" :connectable="false" />
-    <div style="height: 3rem; width: 100%; display: flex; align-items: center">
+    <div style="height: 2.5rem; width: 100%; display: flex; align-items: center">
       <div style="
           font-weight: bold;
           text-align: center;

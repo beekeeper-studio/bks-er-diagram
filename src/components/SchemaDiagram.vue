@@ -3,7 +3,7 @@ import { VueFlow, Panel } from "@vue-flow/core";
 import ZoomControls from "./ZoomControls.vue";
 import { Background } from "@vue-flow/background";
 import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
-import { computed, ref, useTemplateRef } from "vue";
+import { ref, useTemplateRef } from "vue";
 import { vOnClickOutside } from "@vueuse/components";
 import FloatingEdge from "@/components/FloatingEdge.vue";
 import EntityNode from "@/components/EntityNode.vue";

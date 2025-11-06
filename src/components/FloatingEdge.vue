@@ -1,26 +1,37 @@
 <template>
-  <g class="vue-flow__connection" :class="{ highlighted }">
-    <path :id="id" class="vue-flow__edge-path edge-path" :d="d" :marker-start="markerStart" :marker-end="markerEnd"
-      :style="style" />
+  <g :class="{ highlighted }">
+    <g class="vue-flow__connection">
+      <path :id="id" class="vue-flow__edge-path edge-path" :d="d" :marker-start="`url(#${markerStartId})`"
+        :marker-end="`url(#${markerEndId})`" :style="style" />
+    </g>
+
+    <CrowsFootMarker :id="markerStartId" :type="markerStartType" :width="18" :height="18"
+      :stroke="'var(--edge-stroke)'" />
+    <CrowsFootMarker :id="markerEndId" :type="markerEndType" :width="18" :height="18" :stroke="'var(--edge-stroke)'" />
   </g>
 </template>
 
 <script lang="ts">
 import {
   type EdgeProps,
-  getSmoothStepPath,
+  getBezierPath,
   Position,
   useVueFlow,
 } from "@vue-flow/core";
 import { getEdgeParams } from "@/utils/floatingEdgeHelpers";
 import { defineComponent, type PropType } from "vue";
 import type { EdgeData } from "@/composables/useSchemaDiagram";
+import { useSchema } from "@/composables/useSchema";
+import { mapActions } from "pinia";
+import CrowsFootMarker from "@/components/CrowsFootMarker.vue";
 
 type Props = EdgeProps<EdgeData>;
 
 export default defineComponent({
   // Avoid vue flow from adding unneeded attributes to the root element
   inheritAttrs: false,
+
+  components: { CrowsFootMarker },
 
   props: {
     id: {
@@ -33,14 +44,6 @@ export default defineComponent({
     },
     target: {
       type: String as PropType<Props["target"]>,
-      required: true,
-    },
-    markerStart: {
-      type: String as PropType<Props["markerStart"]>,
-      required: true,
-    },
-    markerEnd: {
-      type: String as PropType<Props["markerEnd"]>,
       required: true,
     },
     sourceNode: {
@@ -60,7 +63,40 @@ export default defineComponent({
 
   computed: {
     edgeParams() {
-      return getEdgeParams(this.sourceNode, this.targetNode, this.data);
+      const params = getEdgeParams(this.sourceNode, this.targetNode, this.data);
+      const padding = 18;
+
+      // Add some padding
+      switch (params.sourcePos) {
+        case Position.Left:
+          params.sx -= padding;
+          break;
+        case Position.Right:
+          params.sx += padding;
+          break;
+        case Position.Top:
+          params.sy -= padding;
+          break;
+        case Position.Bottom:
+          params.sy += padding;
+          break;
+      }
+      switch (params.targetPos) {
+        case Position.Left:
+          params.tx -= padding;
+          break;
+        case Position.Right:
+          params.tx += padding;
+          break;
+        case Position.Top:
+          params.ty -= padding;
+          break;
+        case Position.Bottom:
+          params.ty += padding;
+          break;
+      }
+
+      return params;
     },
     highlighted() {
       return this.sourceNode.selected || this.targetNode.selected;
@@ -98,7 +134,7 @@ export default defineComponent({
           targetX = origin + x;
         }
 
-        const [path] = getSmoothStepPath({
+        const [path] = getBezierPath({
           sourceX,
           sourceY: this.edgeParams.sy,
           targetX,
@@ -111,6 +147,50 @@ export default defineComponent({
 
       return "";
     },
+    markerType() {
+      const sourceNode = this.findNode(this.source)!;
+      const targetNode = this.findNode(this.target)!;
+
+      if (sourceNode.selected) {
+        return "diamond";
+      }
+
+      if (targetNode.selected) {
+        return "circle";
+      }
+
+      return "square";
+    },
+    markerStartId() {
+      return `${this.id}-marker-start`;
+    },
+    markerEndId() {
+      return `${this.id}-marker-end`;
+    },
+    markerStartType() {
+      const structure = this.findColumnStrucuture(this.data.to);
+      if (structure?.primaryKey) {
+        return "zero-or-many";
+      }
+      if (structure?.foreignKey) {
+        return "one";
+      }
+      return "none";
+    },
+    markerEndType() {
+      const structure = this.findColumnStrucuture(this.data.from);
+      if (structure?.primaryKey) {
+        return "zero-or-many";
+      }
+      if (structure?.foreignKey) {
+        return "one";
+      }
+      return "none";
+    },
+  },
+
+  methods: {
+    ...mapActions(useSchema, ["findColumnStrucuture"]),
   },
 
   setup() {

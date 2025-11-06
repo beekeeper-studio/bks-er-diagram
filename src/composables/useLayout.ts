@@ -1,5 +1,5 @@
 import dagre from "@dagrejs/dagre";
-import { useVueFlow, type Edge, type Node } from "@vue-flow/core";
+import { Position, useVueFlow, type Edge, type Node } from "@vue-flow/core";
 import { ref } from "vue";
 
 /**
@@ -22,7 +22,7 @@ export function useLayout() {
     dagreGraph.setDefaultEdgeLabel(() => ({}));
 
     // const isHorizontal = dir === "LR";
-    dagreGraph.setGraph({ rankdir: "TB",ranker: 'longest-path', align: 'UR', nodesep: 100, acyclicer: "greedy"});
+    dagreGraph.setGraph({ rankdir: "TB", ranker: 'longest-path', align: 'UR', nodesep: 100, acyclicer: "greedy", edgesep: 100});
 
     direction.value = dir;
 

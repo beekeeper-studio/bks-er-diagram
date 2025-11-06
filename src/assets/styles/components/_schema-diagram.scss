@@ -45,7 +45,6 @@
         var(--query-editor-bg));
     color: var(--text);
     border-radius: 6px;
-    padding-bottom: 1rem;
     box-shadow:
       0 10px 15px -3px rgb(0 0 0 / 0.1),
       0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -90,7 +89,8 @@
 
   .edge-path {
     stroke: var(--edge-stroke);
-    stroke-width: calc(var(--edge-width) * var(--thickness-multipler));
+    // stroke-width: calc(var(--edge-width) * var(--thickness-multipler));
+    stroke-width: var(--edge-width);
   }
 
   .overlay {

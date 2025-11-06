@@ -7,16 +7,27 @@ import {
 } from "@beekeeperstudio/plugin";
 import {
   getHandleId,
+  type Column,
   type ColumnReference,
   type ColumnStructure,
+  type Entity,
   type EntityStructure,
 } from "./useSchemaDiagram";
 import { computed, shallowRef } from "vue";
 import _ from "lodash";
+import { defineStore } from "pinia";
 
 const defaultStreamOptions = {
   minBatchSize: 100,
 } satisfies SchemaStreamOptions;
+
+type ColumnName = string;
+type EntityName = string;
+type SchemaName = string;
+
+type ColumnStructureId =
+  | `${SchemaName}.${EntityName}.${ColumnName}`
+  | `${EntityName}.${ColumnName}`;
 
 export type SchemaStreamOptions = {
   /**
@@ -36,9 +47,19 @@ export type SchemaStreamOptions = {
   signal?: AbortSignal;
 };
 
-export function useSchema() {
+function getColumnStructureId(
+  entity: Entity,
+  column: string,
+): ColumnStructureId {
+  return entity.schema
+    ? (`${entity.schema}.${entity.name}.${column}` as const)
+    : (`${entity.name}.${column}` as const);
+}
+
+export const useSchema = defineStore("schema", () => {
   const progress = shallowRef(0);
   const isStreaming = shallowRef(false);
+  const columnStructureMap = new Map<ColumnStructureId, ColumnStructure>();
 
   function throwIfAborted(signal?: AbortSignal) {
     if (signal?.aborted) {
@@ -73,7 +94,8 @@ export function useSchema() {
 
         const entity = tables[i]!;
 
-        const columnsMap = new Map<string, ColumnStructure>();
+        const structureId = getColumnStructureId.bind(null, entity);
+
         const structure: EntityStructure = {
           name: entity.name,
           schema: entity.schema,
@@ -97,7 +119,7 @@ export function useSchema() {
               primaryKey: false,
               foreignKey: false,
             };
-            columnsMap.set(column.name, columnStructure);
+            columnStructureMap.set(structureId(column.name), columnStructure);
             structure.columns.push(columnStructure);
           });
 
@@ -107,9 +129,9 @@ export function useSchema() {
               table: entity.name,
               schema: entity.schema,
             },
-          })
+          });
           pks.forEach((pk) => {
-            const column = columnsMap.get(pk.name);
+            const column = columnStructureMap.get(structureId(pk.name));
             if (column) {
               column.primaryKey = true;
             }
@@ -144,22 +166,28 @@ export function useSchema() {
                 name: key.toColumn.toString(),
               },
             };
-            const thisTable =
+            const thisTableColumn =
               key.direction === "incoming" ? cKey.to.name : cKey.from.name;
-            const thisColumn = columnsMap.get(thisTable);
+            const thisColumn = columnStructureMap.get(
+              structureId(thisTableColumn),
+            );
             if (thisColumn) {
               thisColumn.hasReferences = true;
             }
             referenceBatch.push(cKey);
 
             if (key.direction === "outgoing") {
-              const fromColumns = Array.isArray(key.fromColumn) ? key.fromColumn : [key.fromColumn];
+              const fromColumns = Array.isArray(key.fromColumn)
+                ? key.fromColumn
+                : [key.fromColumn];
               fromColumns.forEach((column) => {
-                const columnStructure = columnsMap.get(column.toString());
+                const columnStructure = columnStructureMap.get(
+                  structureId(column),
+                );
                 if (columnStructure) {
                   columnStructure.foreignKey = true;
                 }
-              })
+              });
             }
           }
         } catch (error) {
@@ -197,9 +225,16 @@ export function useSchema() {
     }
   }
 
+  function findColumnStrucuture(column: Column) {
+    return columnStructureMap.get(
+      getColumnStructureId(column.entity, column.name),
+    );
+  }
+
   return {
     stream,
     progress: computed(() => progress.value),
     isStreaming: computed(() => isStreaming.value),
+    findColumnStrucuture,
   };
-}
+});
