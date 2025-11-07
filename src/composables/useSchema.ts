@@ -1,6 +1,5 @@
 import {
   getColumns,
-  getConnectionInfo,
   getTableKeys,
   getTables,
   request,
@@ -16,7 +15,6 @@ import {
 import { computed, shallowRef } from "vue";
 import _ from "lodash";
 import { defineStore } from "pinia";
-import type { log } from "console";
 import { entitiesEqual } from "@/utils/schema";
 
 const defaultStreamOptions = {
@@ -91,7 +89,9 @@ function getColumnStructureId(
 export const useSchema = defineStore("schema", () => {
   const progress = shallowRef(0);
   const isStreaming = shallowRef(false);
-  const columnStructureMap = new Map<ColumnStructureId, ColumnStructure>();
+  const columnStructureMap = shallowRef(
+    new Map<ColumnStructureId, ColumnStructure>(),
+  );
 
   function throwIfAborted(signal?: AbortSignal) {
     if (signal?.aborted) {
@@ -236,14 +236,37 @@ export const useSchema = defineStore("schema", () => {
         ordinalPosition: column.ordinalPosition,
         primaryKey: false,
         foreignKey: false,
+        uniqueKey: false,
       };
-      columnStructureMap.set(
+      columnStructureMap.value.set(
         getColumnStructureId(entity, column.name),
         columnStructure,
       );
       entity.columns.push(columnStructure);
     });
 
+    // FIXME make a new function in plugin lib
+    const indexes = await request({
+      name: "getTableIndexes",
+      args: {
+        table: entity.name,
+        schema: entity.schema,
+      },
+    });
+    indexes.forEach((index) => {
+      index.columns.forEach((c) => {
+        const column = findColumnStrucuture({
+          entity,
+          name: c.name,
+        });
+        if (column) {
+          column.primaryKey = index.primary;
+          column.uniqueKey = index.unique;
+        }
+      });
+    });
+
+    // HACK: the demo.db file in beekeeper studio somehow does not have indexes?
     // FIXME make a new function in plugin lib
     const pks = await request({
       name: "getPrimaryKeys",
@@ -253,9 +276,10 @@ export const useSchema = defineStore("schema", () => {
       },
     });
     pks.forEach((pk) => {
-      const column = columnStructureMap.get(
-        getColumnStructureId(entity, pk.name),
-      );
+      const column = findColumnStrucuture({
+        entity,
+        name: pk.name,
+      });
       if (column) {
         column.primaryKey = true;
       }
@@ -287,9 +311,10 @@ export const useSchema = defineStore("schema", () => {
       };
       const thisTableColumn =
         key.direction === "incoming" ? cKey.to.name : cKey.from.name;
-      const thisColumn = columnStructureMap.get(
-        getColumnStructureId(entity, thisTableColumn),
-      );
+      const thisColumn = findColumnStrucuture({
+        entity,
+        name: thisTableColumn,
+      });
       if (thisColumn) {
         thisColumn.hasReferences = true;
         references.push(cKey);
@@ -300,9 +325,10 @@ export const useSchema = defineStore("schema", () => {
           ? key.fromColumn
           : [key.fromColumn];
         fromColumns.forEach((column) => {
-          const columnStructure = columnStructureMap.get(
-            getColumnStructureId(entity, column),
-          );
+          const columnStructure = findColumnStrucuture({
+            entity,
+            name: column,
+          });
           if (columnStructure) {
             columnStructure.foreignKey = true;
           }
@@ -313,7 +339,7 @@ export const useSchema = defineStore("schema", () => {
   }
 
   function findColumnStrucuture(column: Column) {
-    return columnStructureMap.get(
+    return columnStructureMap.value.get(
       getColumnStructureId(column.entity, column.name),
     );
   }
@@ -323,5 +349,6 @@ export const useSchema = defineStore("schema", () => {
     progress: computed(() => progress.value),
     isStreaming: computed(() => isStreaming.value),
     findColumnStrucuture,
+    columnStructureMap,
   };
 });

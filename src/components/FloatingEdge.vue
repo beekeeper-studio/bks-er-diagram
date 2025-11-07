@@ -22,6 +22,7 @@ import { getEdgeParams } from "@/utils/floatingEdgeHelpers";
 import { defineComponent, type PropType } from "vue";
 import { getHandleId, type EdgeData } from "@/composables/useSchemaDiagram";
 import { useSchema } from "@/composables/useSchema";
+import { type Column } from "@/composables/useSchemaDiagram";
 import { mapActions } from "pinia";
 import CrowsFootMarker from "@/components/CrowsFootMarker.vue";
 
@@ -156,24 +157,33 @@ export default defineComponent({
           sourcePosition: this.edgeParams.sourcePos,
           targetPosition: this.edgeParams.targetPos,
         });
+
+        if (
+          this.source === this.target
+        ) {
+          // FIXME we don't need to use getBezierPath for self referential
+          // relations like this
+          let [i, j, k, l] = path.split(" ") as [
+            `M${string}`,
+            `C${string}`,
+            string,
+            string,
+          ];
+
+          let [j0, j1] = j.split(",");
+          j0 = (Number(j0!.slice(1)) + 50).toString();
+          j = `C${j0},${j1}`;
+
+          let [k0, k1] = k!.split(",");
+          k0 = (Number(k0!) + 50).toString();
+          k = `${k0},${k1}`;
+
+          return `${i} ${j} ${k} ${l}`;
+        }
         return path;
       }
 
       return "";
-    },
-    markerType() {
-      const sourceNode = this.findNode(this.source)!;
-      const targetNode = this.findNode(this.target)!;
-
-      if (sourceNode.selected) {
-        return "diamond";
-      }
-
-      if (targetNode.selected) {
-        return "circle";
-      }
-
-      return "square";
     },
     markerStartId() {
       return `${this.id}-marker-start`;
@@ -182,29 +192,40 @@ export default defineComponent({
       return `${this.id}-marker-end`;
     },
     markerStartType() {
-      const structure = this.findColumnStrucuture(this.data.to);
-      if (structure?.primaryKey) {
-        return "one-or-many";
-      }
-      if (structure?.foreignKey) {
-        return "one";
-      }
-      return "none";
+      return this.getMarkerType(this.data.from);
     },
     markerEndType() {
-      const structure = this.findColumnStrucuture(this.data.from);
-      if (structure?.primaryKey) {
-        return "one-or-many";
-      }
-      if (structure?.foreignKey) {
-        return "one";
-      }
-      return "none";
+      return this.getMarkerType(this.data.to);
     },
   },
 
   methods: {
     ...mapActions(useSchema, ["findColumnStrucuture"]),
+
+    getMarkerType(column: Column) {
+      const col = this.findColumnStrucuture(column);
+
+      if (!col) {
+        return "none";
+      }
+
+      // FK + PK/unique → 1:1
+      if (col.foreignKey && (col.primaryKey || col.uniqueKey)) {
+        return "one";
+      }
+
+      // plain FK → many side
+      if (col.foreignKey) {
+        return "one-or-many";
+      }
+
+      // PK/unique but not FK → one side
+      if (col.primaryKey || col.uniqueKey) {
+        return "one";
+      }
+
+      return "none";
+    },
   },
 
   setup() {
