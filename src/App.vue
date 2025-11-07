@@ -7,7 +7,10 @@ import {
 } from "@/composables/useSchemaDiagram";
 import {
   addNotificationListener,
+  getConnectionInfo,
+  getViewContext,
   removeNotificationListener,
+  setTabTitle,
 } from "@beekeeperstudio/plugin";
 import { useSchema } from "./composables/useSchema";
 
@@ -24,7 +27,7 @@ function abort() {
   abortController?.abort();
 }
 
-async function initialize() {
+async function initialize(options: { schema?: string; entity?: string }) {
   if (state.value !== "uninitialized" && state.value !== "ready") {
     console.warn(
       "Can only initialize when the state is `ready` or `uninitialized`.",
@@ -39,7 +42,7 @@ async function initialize() {
 
     abortController = new AbortController();
 
-    const iter = stream({ signal: abortController.signal });
+    const iter = stream({ signal: abortController.signal, ...options });
 
     for await (const { entities, keys } of iter) {
       allKeys.push(...keys);
@@ -61,8 +64,20 @@ async function initialize() {
   state.value = "ready";
 }
 
-onMounted(() => {
-  initialize();
+onMounted(async () => {
+  const connection = await getConnectionInfo();
+  const viewContext = await getViewContext();
+
+  if (viewContext.command === "openTableStructureSchema") {
+    await initialize({
+      schema: viewContext.params.entity.schema,
+      entity: viewContext.params.entity.name,
+    });
+    await setTabTitle(viewContext.params.entity.name);
+  } else {
+    await initialize({ schema: connection.defaultSchema });
+  }
+
   /** @ts-expect-error FIXME not fully typed */
   addNotificationListener("tablesChanged", initialize);
 });

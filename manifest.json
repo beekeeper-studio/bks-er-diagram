@@ -24,6 +24,12 @@
         "name": "Open ER Diagram",
         "view": "main-view",
         "placement": "menubar.tools"
+      },
+      {
+        "command": "openTableStructureSchema",
+        "name": "Open ER Diagram",
+        "view": "main-view",
+        "placement": "structure.statusbar.menu"
       }
     ]
   }

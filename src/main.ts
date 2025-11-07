@@ -5,10 +5,12 @@ import App from "./App.vue";
 import {
   addNotificationListener,
   getAppInfo,
+  getViewContext,
+  log,
   openExternal,
   type AppTheme,
 } from "@beekeeperstudio/plugin";
-import { VueKeyboardTrapDirectivePlugin } from '@pdanpdan/vue-keyboard-trap';
+import { VueKeyboardTrapDirectivePlugin } from "@pdanpdan/vue-keyboard-trap";
 import pluralize from "pluralize";
 import { createPinia } from "pinia";
 
@@ -28,7 +30,7 @@ if (import.meta.env.DEV) {
     if (e.ctrlKey && e.key === "r") {
       window.location.reload();
     }
-  })
+  });
 }
 
 const app = createApp(App);
@@ -39,4 +41,3 @@ app.use(VueKeyboardTrapDirectivePlugin, {});
 app.config.globalProperties.$pluralize = pluralize;
 app.config.globalProperties.$openExternal = openExternal;
 app.mount("#app");
-

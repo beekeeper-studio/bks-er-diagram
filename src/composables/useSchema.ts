@@ -16,6 +16,8 @@ import {
 import { computed, shallowRef } from "vue";
 import _ from "lodash";
 import { defineStore } from "pinia";
+import type { log } from "console";
+import { entitiesEqual } from "@/utils/schema";
 
 const defaultStreamOptions = {
   minBatchSize: 100,
@@ -29,7 +31,7 @@ type ColumnStructureId =
   | `${SchemaName}.${EntityName}.${ColumnName}`
   | `${EntityName}.${ColumnName}`;
 
-export type SchemaStreamOptions = {
+type BaseSchemaStreamOptions = {
   /**
    * If the sum of entities and keys in the batch is more than this value, it
    * will be yielded.
@@ -38,14 +40,44 @@ export type SchemaStreamOptions = {
    */
   minBatchSize?: number;
   /**
-   * The schema to stream. If not provided, the default schema will be used.
+   * Name of the schema to stream.
+   *
+   * If omitted, the default schema will be used.
    */
   schema?: string;
   /**
-   * The signal to abort the stream.
+   * The signal to cancel the stream.
    */
   signal?: AbortSignal;
 };
+
+export type SchemaStreamOptions =
+  | BaseSchemaStreamOptions
+  | (BaseSchemaStreamOptions & {
+    /**
+     * The name of a specific entity to stream.
+     *
+     * If omitted, all entities in the schema will be streamed.
+     * If provided, only that entity and its related entities
+     * (based on `depth`) will be streamed.
+     *
+     * @todo NOT IMPLEMENTED
+     */
+    entity: string;
+    /**
+     * How many levels of related entities to include.
+     *
+     * - `0` = only the specified entity.
+     * - `1` = include directly related entities (default).
+     * - `2+` = include deeper relationships.
+     *
+     * Can only be specified if `entity` is provided.
+     *
+     * @default 1
+     * @todo NOT IMPLEMENTED
+     */
+    depth?: number;
+  });
 
 function getColumnStructureId(
   entity: Entity,
@@ -77,117 +109,81 @@ export const useSchema = defineStore("schema", () => {
     let entityBatch: EntityStructure[] = [];
     let referenceBatch: ColumnReference[] = [];
 
-    const mergedOptions = _.merge(defaultStreamOptions, options);
+    options = _.merge(defaultStreamOptions, options);
 
     isStreaming.value = true;
 
     try {
-      if (!mergedOptions.schema) {
-        const connection = await getConnectionInfo();
-        mergedOptions.schema = connection.defaultSchema;
-      }
+      let tables: Entity[];
 
-      const tables = await getTables(mergedOptions.schema);
+      if ("entity" in options) {
+        tables = [
+          {
+            name: options.entity,
+            schema: options.schema,
+          },
+        ];
+      } else {
+        tables = await getTables(options.schema);
+      }
 
       for (let i = 0; i < tables.length; i++) {
         throwIfAborted(options?.signal);
 
-        const entity = tables[i]!;
-
-        const structureId = getColumnStructureId.bind(null, entity);
-
-        const structure: EntityStructure = {
-          name: entity.name,
-          schema: entity.schema,
+        const entity: EntityStructure = {
+          name: tables[i]!.name,
+          schema: tables[i]!.schema,
           type: "table",
           columns: [],
         };
 
         try {
-          const columns = await getColumns(entity.name, entity.schema);
-          columns.forEach((column) => {
-            const columnStructure: ColumnStructure = {
-              entity,
-              name: column.name,
-              type: column.type,
-              handleId: getHandleId({
-                entity,
-                name: column.name,
-              }),
-              hasReferences: false,
-              ordinalPosition: column.ordinalPosition,
-              primaryKey: false,
-              foreignKey: false,
-            };
-            columnStructureMap.set(structureId(column.name), columnStructure);
-            structure.columns.push(columnStructure);
-          });
-
-          const pks = await request({
-            name: "getPrimaryKeys",
-            args: {
-              table: entity.name,
-              schema: entity.schema,
-            },
-          });
-          pks.forEach((pk) => {
-            const column = columnStructureMap.get(structureId(pk.name));
-            if (column) {
-              column.primaryKey = true;
-            }
-          });
+          await fillEntityStructureWithColumns(entity);
         } catch (error) {
           // TODO show helpful error here
           console.error(error);
         }
 
-        progress.value = (i + 0.5) / tables.length;
+        progress.value = (i + 0.33) / tables.length;
 
         throwIfAborted(options?.signal);
 
-        try {
-          const keys = await getTableKeys(entity.name, entity.schema);
-          for (const key of keys) {
-            const cKey: ColumnReference = {
-              from: {
-                entity: {
-                  name: key.fromTable,
-                  schema: key.fromSchema,
-                },
-                // FIXME wont work for composite keys
-                name: key.fromColumn.toString(),
-              },
-              to: {
-                entity: {
-                  name: key.toTable,
-                  schema: key.toSchema,
-                },
-                // FIXME wont work for composite keys
-                name: key.toColumn.toString(),
-              },
-            };
-            const thisTableColumn =
-              key.direction === "incoming" ? cKey.to.name : cKey.from.name;
-            const thisColumn = columnStructureMap.get(
-              structureId(thisTableColumn),
-            );
-            if (thisColumn) {
-              thisColumn.hasReferences = true;
-            }
-            referenceBatch.push(cKey);
+        let references: ColumnReference[] = [];
 
-            if (key.direction === "outgoing") {
-              const fromColumns = Array.isArray(key.fromColumn)
-                ? key.fromColumn
-                : [key.fromColumn];
-              fromColumns.forEach((column) => {
-                const columnStructure = columnStructureMap.get(
-                  structureId(column),
-                );
-                if (columnStructure) {
-                  columnStructure.foreignKey = true;
-                }
-              });
+        try {
+          references = await findReferencesAndUpdateEntity(entity);
+          referenceBatch.push(...references);
+        } catch (error) {
+          // TODO show helpful error here
+          console.error(error);
+        }
+
+        entityBatch.push(entity);
+
+        progress.value = (i + 0.66) / tables.length;
+
+        try {
+          if ("entity" in options) {
+            for (const reference of references) {
+              if (!entitiesEqual(reference.from.entity, entity)) {
+                const fromEntity: EntityStructure = {
+                  ...reference.from.entity,
+                  type: "table",
+                  columns: [],
+                };
+                await fillEntityStructureWithColumns(fromEntity);
+                await findReferencesAndUpdateEntity(fromEntity);
+                entityBatch.push(fromEntity);
+              } else if (!entitiesEqual(reference.to.entity, entity)) {
+                const toEntity: EntityStructure = {
+                  ...reference.to.entity,
+                  type: "table",
+                  columns: [],
+                };
+                await fillEntityStructureWithColumns(toEntity);
+                await findReferencesAndUpdateEntity(toEntity);
+                entityBatch.push(toEntity);
+              }
             }
           }
         } catch (error) {
@@ -195,13 +191,11 @@ export const useSchema = defineStore("schema", () => {
           console.error(error);
         }
 
-        entityBatch.push(structure);
-
         progress.value = (i + 1) / tables.length;
 
         if (
           entityBatch.length + referenceBatch.length >=
-          mergedOptions.minBatchSize
+          options.minBatchSize!
         ) {
           yield {
             entities: entityBatch,
@@ -223,6 +217,99 @@ export const useSchema = defineStore("schema", () => {
     } finally {
       isStreaming.value = false;
     }
+  }
+
+  /** Mutate `entity` structure by filling the `columns` array and setting the `columnStructureMap`. */
+  async function fillEntityStructureWithColumns(entity: EntityStructure) {
+    const columns = await getColumns(entity.name, entity.schema);
+
+    columns.forEach((column) => {
+      const columnStructure: ColumnStructure = {
+        entity,
+        name: column.name,
+        type: column.type,
+        handleId: getHandleId({
+          entity,
+          name: column.name,
+        }),
+        hasReferences: false,
+        ordinalPosition: column.ordinalPosition,
+        primaryKey: false,
+        foreignKey: false,
+      };
+      columnStructureMap.set(
+        getColumnStructureId(entity, column.name),
+        columnStructure,
+      );
+      entity.columns.push(columnStructure);
+    });
+
+    // FIXME make a new function in plugin lib
+    const pks = await request({
+      name: "getPrimaryKeys",
+      args: {
+        table: entity.name,
+        schema: entity.schema,
+      },
+    });
+    pks.forEach((pk) => {
+      const column = columnStructureMap.get(
+        getColumnStructureId(entity, pk.name),
+      );
+      if (column) {
+        column.primaryKey = true;
+      }
+    });
+  }
+
+  /** Mutate `entity` structure by filling the `hasReferences` and `foreignKey` properties. */
+  async function findReferencesAndUpdateEntity(entity: EntityStructure) {
+    const references: ColumnReference[] = [];
+    const keys = await getTableKeys(entity.name, entity.schema);
+    for (const key of keys) {
+      const cKey: ColumnReference = {
+        from: {
+          entity: {
+            name: key.fromTable,
+            schema: key.fromSchema,
+          },
+          // FIXME composite key is untested
+          name: key.fromColumn.toString(),
+        },
+        to: {
+          entity: {
+            name: key.toTable,
+            schema: key.toSchema,
+          },
+          // FIXME composite key is untested
+          name: key.toColumn.toString(),
+        },
+      };
+      const thisTableColumn =
+        key.direction === "incoming" ? cKey.to.name : cKey.from.name;
+      const thisColumn = columnStructureMap.get(
+        getColumnStructureId(entity, thisTableColumn),
+      );
+      if (thisColumn) {
+        thisColumn.hasReferences = true;
+        references.push(cKey);
+      }
+
+      if (key.direction === "outgoing") {
+        const fromColumns = Array.isArray(key.fromColumn)
+          ? key.fromColumn
+          : [key.fromColumn];
+        fromColumns.forEach((column) => {
+          const columnStructure = columnStructureMap.get(
+            getColumnStructureId(entity, column),
+          );
+          if (columnStructure) {
+            columnStructure.foreignKey = true;
+          }
+        });
+      }
+    }
+    return references;
   }
 
   function findColumnStrucuture(column: Column) {

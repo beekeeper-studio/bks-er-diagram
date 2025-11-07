@@ -20,7 +20,7 @@ import {
 } from "@vue-flow/core";
 import { getEdgeParams } from "@/utils/floatingEdgeHelpers";
 import { defineComponent, type PropType } from "vue";
-import type { EdgeData } from "@/composables/useSchemaDiagram";
+import { getHandleId, type EdgeData } from "@/composables/useSchemaDiagram";
 import { useSchema } from "@/composables/useSchema";
 import { mapActions } from "pinia";
 import CrowsFootMarker from "@/components/CrowsFootMarker.vue";
@@ -64,9 +64,9 @@ export default defineComponent({
   computed: {
     edgeParams() {
       const params = getEdgeParams(this.sourceNode, this.targetNode, this.data);
-      const padding = 18;
 
       // Add some padding
+      const padding = 18;
       switch (params.sourcePos) {
         case Position.Left:
           params.sx -= padding;
@@ -97,6 +97,20 @@ export default defineComponent({
       }
 
       return params;
+    },
+    sourceHandleId() {
+      const position = this.edgeParams.sourcePos;
+      if (position === Position.Left || position === Position.Right) {
+        return `${position}-${getHandleId(this.data.from)}`;
+      }
+      return "";
+    },
+    targetHandleId() {
+      const position = this.edgeParams.targetPos;
+      if (position === Position.Left || position === Position.Right) {
+        return `${position}-${getHandleId(this.data.to)}`;
+      }
+      return "";
     },
     highlighted() {
       return this.sourceNode.selected || this.targetNode.selected;
@@ -170,7 +184,7 @@ export default defineComponent({
     markerStartType() {
       const structure = this.findColumnStrucuture(this.data.to);
       if (structure?.primaryKey) {
-        return "zero-or-many";
+        return "one-or-many";
       }
       if (structure?.foreignKey) {
         return "one";
@@ -180,7 +194,7 @@ export default defineComponent({
     markerEndType() {
       const structure = this.findColumnStrucuture(this.data.from);
       if (structure?.primaryKey) {
-        return "zero-or-many";
+        return "one-or-many";
       }
       if (structure?.foreignKey) {
         return "one";
