@@ -1,0 +1,19 @@
+.entity-node {
+  .entity-name {
+    height: 2.5rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    padding-left: 0.75rem;
+    margin-right: 0.75rem;
+  }
+
+  .entity-icon {
+    font-size: 1.25em;
+    margin-right: 0.5rem;
+    color: var(--theme-primary);
+  }
+}

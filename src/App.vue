@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
 import {
   type ColumnReference,
@@ -14,6 +14,7 @@ import {
 } from "@beekeeperstudio/plugin";
 import { useSchema } from "./composables/useSchema";
 import { useDebug } from "./composables/useDebug";
+import type { MenuItem } from "primevue/menuitem";
 
 const diagram = useSchemaDiagram();
 const { stream, progress } = useSchema();
@@ -58,6 +59,9 @@ async function initialize(options: { schema?: string; entity?: string }) {
 
     await new Promise((resolve) => setTimeout(resolve, 250));
     diagram.layout();
+
+    await nextTick();
+    diagram.fitView();
   } catch (e) {
     // FIXME show helpful error
     console.error(e);
@@ -87,19 +91,35 @@ onMounted(async () => {
 onUnmounted(() => {
   removeNotificationListener("tablesChanged", initialize);
 });
+
+const menuItems = computed(
+  () =>
+    [
+      {
+        label: "Show all columns",
+        command() {
+          diagram.showAllColumns = !diagram.showAllColumns;
+        },
+        icon: diagram.showAllColumns ? "check" : "",
+      },
+      ...(debug.isDevMode
+        ? [
+          {
+            label: "[DEV] Toggle Debug UI",
+            command() {
+              debug.toggleDebugUI();
+            },
+            icon: debug.isDebuggingUI ? "check" : "",
+          },
+        ]
+        : []),
+    ] as MenuItem[],
+);
 </script>
 
 <template>
   <div class="schema-diagram-container">
-    <SchemaDiagram :disabled="state === 'initializing' || state === 'aborting'">
-      <template #menu>
-        <button v-if="debug.isDevMode" @click="debug.toggleDebugUI" style="height: 2rem; font-weight: 500"
-          class="btn btn-flat">
-          <span class="material-symbols-outlined" v-show="debug.isDebuggingUI">check</span>
-          <span>[DEV] Toggle Debug UI</span>
-        </button>
-      </template>
-    </SchemaDiagram>
+    <SchemaDiagram :disabled="state === 'initializing' || state === 'aborting'" :menu-items="menuItems" />
     <div v-if="state === 'initializing' || state === 'aborting'" class="loading-progress"
       :style="{ width: `${progress * 100}%` }" />
     <div v-if="state === 'initializing' || state === 'aborting'" style="

@@ -13,6 +13,7 @@ import {
 import { VueKeyboardTrapDirectivePlugin } from "@pdanpdan/vue-keyboard-trap";
 import pluralize from "pluralize";
 import { createPinia } from "pinia";
+import PrimeVue from 'primevue/config';
 
 function applyTheme(theme: AppTheme) {
   document.querySelector("#app-theme")!.textContent =
@@ -37,6 +38,7 @@ const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
+app.use(PrimeVue);
 app.use(VueKeyboardTrapDirectivePlugin, {});
 app.config.globalProperties.$pluralize = pluralize;
 app.config.globalProperties.$openExternal = openExternal;

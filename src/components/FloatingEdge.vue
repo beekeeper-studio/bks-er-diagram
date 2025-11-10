@@ -23,11 +23,6 @@ import { getEdgeParams } from "@/utils/floatingEdgeHelpers";
 import { defineComponent, type PropType } from "vue";
 import { getHandleId, type EdgeData } from "@/composables/useSchemaDiagram";
 import { useSchema } from "@/composables/useSchema";
-import {
-  type Column,
-  type ColumnStructure,
-  type ColumnReference,
-} from "@/composables/useSchemaDiagram";
 import { mapActions } from "pinia";
 import CrowsFootMarker from "@/components/CrowsFootMarker.vue";
 
@@ -122,6 +117,32 @@ export default defineComponent({
       return this.sourceNode.selected || this.targetNode.selected;
     },
     d() {
+      const selfReferential = this.source === this.target;
+
+      if (selfReferential) {
+        const handle1 = this.sourceNode.handleBounds.source!.find(
+          (h) => h.id === `${Position.Right}-${getHandleId(this.data.from)}`,
+        );
+
+        if (!handle1) return "";
+
+        const handle2 = this.targetNode.handleBounds.source!.find(
+          (h) => h.id === `${Position.Right}-${getHandleId(this.data.to)}`,
+        );
+
+        if (!handle2) return "";
+
+        let offsetX = handle1.width + 18;
+        const offsetY1 = handle1.height / 2;
+        const offsetY2 = handle2.height / 2;
+
+        const x = this.sourceNode.position.x + handle1.x + offsetX;
+        const y1 = this.sourceNode.position.y + handle1.y + offsetY1;
+        const y2 = this.targetNode.position.y + handle2.y + offsetY2;
+
+        return `M ${x} ${y1} C ${x + 50} ${y1}, ${x + 50} ${y2}, ${x} ${y2}`;
+      }
+
       if (this.edgeParams.sx) {
         let sourceX = this.edgeParams.sx;
         let targetX = this.edgeParams.tx;
@@ -163,26 +184,6 @@ export default defineComponent({
           targetPosition: this.edgeParams.targetPos,
         });
 
-        if (this.source === this.target) {
-          // FIXME we don't need to use getBezierPath for self referential
-          // relations like this
-          let [i, j, k, l] = path.split(" ") as [
-            `M${string}`,
-            `C${string}`,
-            string,
-            string,
-          ];
-
-          let [j0, j1] = j.split(",");
-          j0 = (Number(j0!.slice(1)) + 50).toString();
-          j = `C${j0},${j1}`;
-
-          let [k0, k1] = k!.split(",");
-          k0 = (Number(k0!) + 50).toString();
-          k = `${k0},${k1}`;
-
-          return `${i} ${j} ${k} ${l}`;
-        }
         return path;
       }
 

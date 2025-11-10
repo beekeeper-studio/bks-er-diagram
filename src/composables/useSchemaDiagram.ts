@@ -1,6 +1,6 @@
 import { useVueFlow, type Edge, type Node } from "@vue-flow/core";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import { useLayout } from "./useLayout";
 
 export type Entity = {
@@ -108,6 +108,11 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
    * recommended to use this as a readonly ref and use `add` to modify it.
    **/
   const entitiesRef = ref<EntityStructure[]>([]);
+  const showAllColumns = shallowRef(localStorage.getItem("show-all-columns") === "true");
+
+  watch(showAllColumns, () => {
+    localStorage.setItem("show-all-columns", showAllColumns.value.toString());
+  })
 
   /**
    * Add entities to the diagram. Use `await` or `.then()` to wait for the
@@ -200,5 +205,6 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     selectedNodes,
     selectedEntities,
     thicknessMultipler,
+    showAllColumns,
   };
 });

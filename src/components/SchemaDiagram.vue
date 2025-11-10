@@ -1,27 +1,3 @@
-<script setup lang="ts">
-import { VueFlow, Panel, useVueFlow } from "@vue-flow/core";
-import ZoomControls from "./ZoomControls.vue";
-import { Background } from "@vue-flow/background";
-import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
-import { ref, useTemplateRef } from "vue";
-import { vOnClickOutside } from "@vueuse/components";
-import FloatingEdge from "@/components/FloatingEdge.vue";
-import EntityNode from "@/components/EntityNode.vue";
-
-defineProps({
-  disabled: Boolean,
-});
-
-const diagram = useSchemaDiagram();
-const showMenu = ref(false);
-
-const menuBtn = useTemplateRef<HTMLButtonElement>("menuBtn");
-
-function hideMenu() {
-  showMenu.value = false;
-}
-</script>
-
 <template>
   <div class="schema-diagram" :style="{
     '--thickness-multipler': diagram.thicknessMultipler,
@@ -38,21 +14,14 @@ function hideMenu() {
       </template>
 
       <Panel position="top-left">
-        <button class="btn btn-fab btn-flat" @click="showMenu = !showMenu" ref="menuBtn">
+        <button class="btn btn-fab btn-flat" @click="toggleMenu" ref="menuBtn">
           <span class="material-symbols-outlined">menu</span>
         </button>
-        <div v-if="showMenu" @click="hideMenu" v-on-click-outside="[hideMenu, { ignore: [menuBtn] }]" style="
-            margin-top: 0.5rem;
-            background-color: color-mix(
-              in srgb,
-              var(--theme-base) 10%,
-              var(--query-editor-bg)
-            );
-            box-shadow: 0 0 0.5rem var(--query-editor-bg);
-            border-radius: 8px;
-          ">
-          <slot name="menu"></slot>
-        </div>
+        <Menu :model="menuItems" :popup="true" ref="menu">
+          <template #itemicon="{item}">
+            <span class="material-symbols-outlined menu-icon" >{{ item.icon }}</span>
+          </template>
+        </Menu>
       </Panel>
       <Panel position="bottom-left" v-show="false">
         <button class="btn btn-fab btn-flat">
@@ -76,3 +45,54 @@ function hideMenu() {
     </VueFlow>
   </div>
 </template>
+
+<script lang="ts">
+import { VueFlow, Panel } from "@vue-flow/core";
+import ZoomControls from "./ZoomControls.vue";
+import { Background } from "@vue-flow/background";
+import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
+import { defineComponent, type PropType } from "vue";
+import FloatingEdge from "@/components/FloatingEdge.vue";
+import EntityNode from "@/components/EntityNode.vue";
+import Menu from "primevue/menu";
+import { type MenuItem } from "primevue/menuitem";
+
+export default defineComponent({
+  components: {
+    VueFlow,
+    Panel,
+    ZoomControls,
+    Background,
+    FloatingEdge,
+    EntityNode,
+    Menu,
+  },
+
+  props: {
+    disabled: Boolean,
+    menuItems: {
+      type: Array as PropType<MenuItem[]>,
+      default: () => [],
+    },
+  },
+
+  data() {
+    return {
+      showMenu: false,
+    };
+  },
+
+  methods: {
+    toggleMenu(event) {
+      this.$refs.menu.toggle(event);
+    },
+  },
+
+  setup() {
+    const diagram = useSchemaDiagram();
+    return {
+      diagram,
+    };
+  },
+});
+</script>

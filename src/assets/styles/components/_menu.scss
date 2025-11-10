@@ -1,0 +1,61 @@
+.p-menu {
+  --p-menu-border-radius: 8px;
+  --p-menu-item-border-radius: 8px;
+  --p-menu-color: var(--text);
+  --p-menu-background: color-mix(in srgb,
+      var(--theme-base) 6%,
+      var(--query-editor-bg));
+  --p-menu-shadow: 0 0 0.5rem var(--query-editor-bg);
+  --p-menu-item-focus-background: color-mix(in srgb,
+      var(--theme-base) 12%,
+      var(--query-editor-bg));
+  --p-menu-item-focus-color: var(--theme-base);
+  --p-menu-submenu-label-font-weight: normal;
+
+  .p-menu-item {
+    font-size: 12px;
+
+    .menu-icon {
+      width: 2rem;
+      font-size: 1.5em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    a {
+      font-weight: normal;
+      height: 2rem;
+    }
+  }
+}
+
+.p-menu-list {
+  // // background-color: color-mix(in srgb,
+  // //     var(--theme-base) 6%,
+  // //     var(--query-editor-bg));
+  // // box-shadow: 0 0 0.5rem var(--query-editor-bg);
+  // overflow: hidden;
+  // display: flex;
+  // flex-direction: column;
+  // color: var(--text);
+
+  // .p-menu-item {
+  //   height: 2rem;
+  //   display: flex;
+  //   align-items: center;
+  //   padding-inline: 0.5rem;
+  //   font-size: 0.85rem;
+  //
+  //   a {
+  //     font-weight: normal;
+  //   }
+  //
+  //   &:hover {
+  //     background-color: color-mix(in srgb,
+  //         var(--theme-base) 12%,
+  //         var(--query-editor-bg));
+  //     color: var(--theme-base);
+  //   }
+  // }
+}

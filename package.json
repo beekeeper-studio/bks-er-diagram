@@ -21,6 +21,7 @@
     "lodash": "^4.17.21",
     "pinia": "^3.0.3",
     "pluralize": "^8.0.0",
+    "primevue": "^4.4.1",
     "vue": "^3.5.22"
   },
   "devDependencies": {

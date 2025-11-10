@@ -545,6 +545,41 @@
   resolved "https://registry.yarnpkg.com/@polka/url/-/url-1.0.0-next.29.tgz#5a40109a1ab5f84d6fd8fc928b19f367cbe7e7b1"
   integrity sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==
 
+"@primeuix/styled@^0.7.3", "@primeuix/styled@^0.7.4":
+  version "0.7.4"
+  resolved "https://registry.yarnpkg.com/@primeuix/styled/-/styled-0.7.4.tgz#d2108a7fad297dea60d549b2c10ed744dc0cbc0e"
+  integrity sha512-QSO/NpOQg8e9BONWRBx9y8VGMCMYz0J/uKfNJEya/RGEu7ARx0oYW0ugI1N3/KB1AAvyGxzKBzGImbwg0KUiOQ==
+  dependencies:
+    "@primeuix/utils" "^0.6.1"
+
+"@primeuix/styles@^1.2.5":
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/@primeuix/styles/-/styles-1.2.5.tgz#97fe5b53d141f0dbd35c4f417f6a76db3eb1e244"
+  integrity sha512-nypFRct/oaaBZqP4jinT0puW8ZIfs4u+l/vqUFmJEPU332fl5ePj6DoOpQgTLzo3OfmvSmz5a5/5b4OJJmmi7Q==
+  dependencies:
+    "@primeuix/styled" "^0.7.3"
+
+"@primeuix/utils@^0.6.1":
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/@primeuix/utils/-/utils-0.6.2.tgz#88b834a7b92fc32e1e7c2ed61919c4b40774a886"
+  integrity sha512-l+li4z6UAwamqbu4xodN3lqr1G4S37DKEJ7Y/nE3MjEx7zJ+KIBkb5voF26Nuly1UCmIcRWQJokhLRF7+sRhyg==
+
+"@primevue/core@4.4.1":
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/@primevue/core/-/core-4.4.1.tgz#c964f7474821b7d7657ca9a42b1c1794aa5f0052"
+  integrity sha512-RG56iDKIJT//EtntjQzOiWOHZZJczw/qWWtdL5vFvw8/QDS9DPKn8HLpXK7N5Le6KK1MLXUsxoiGTZK+poUFUg==
+  dependencies:
+    "@primeuix/styled" "^0.7.4"
+    "@primeuix/utils" "^0.6.1"
+
+"@primevue/icons@4.4.1":
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/@primevue/icons/-/icons-4.4.1.tgz#908edd973e487bba43832a34b9637852d7bbf0b0"
+  integrity sha512-UfDimrIjVdY6EziwieyV4zPKzW6mnKHKhy4Dgyjv2oI6pNeuim+onbJo1ce22PEGXW78vfblG/3/JIzVHFweqQ==
+  dependencies:
+    "@primeuix/utils" "^0.6.1"
+    "@primevue/core" "4.4.1"
+
 "@rolldown/pluginutils@1.0.0-beta.29":
   version "1.0.0-beta.29"
   resolved "https://registry.yarnpkg.com/@rolldown/pluginutils/-/pluginutils-1.0.0-beta.29.tgz#f8fc9a8788757dccba0d3b7fee93183621773d4c"
@@ -1478,6 +1513,17 @@ postcss@^8.5.6:
     nanoid "^3.3.11"
     picocolors "^1.1.1"
     source-map-js "^1.2.1"
+
+primevue@^4.4.1:
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/primevue/-/primevue-4.4.1.tgz#3367cc142ccf67569ceef58a4bdba54d5f986067"
+  integrity sha512-JbHBa5k30pZ7mn/z4vYBOnyt5GrR15eM3X0wa3VanonxnFLYkTEx8OMh33aU6ndWeOfi7Ef57dOL3bTH+3f4hQ==
+  dependencies:
+    "@primeuix/styled" "^0.7.4"
+    "@primeuix/styles" "^1.2.5"
+    "@primeuix/utils" "^0.6.1"
+    "@primevue/core" "4.4.1"
+    "@primevue/icons" "4.4.1"
 
 readdirp@^4.0.1:
   version "4.1.2"
