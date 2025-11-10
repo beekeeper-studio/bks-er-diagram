@@ -273,7 +273,9 @@ export const useSchema = defineStore("schema", () => {
         if (column) {
           column.primaryKey = index.primary;
           column.uniqueKey = index.unique;
-          pkCount++;
+          if (index.primary) {
+            pkCount++;
+          }
         }
       });
     });

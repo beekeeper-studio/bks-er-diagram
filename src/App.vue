@@ -151,6 +151,7 @@ onUnmounted(() => {
                 {{ column.foreignKey ? "FK" : "" }}
                 {{ column.uniqueKey ? "UK" : "" }}
               </li>
+              <li>Composite: {{ entity.isComposite ? "true" : "false" }}</li>
             </ul>
           </div>
         </template>
