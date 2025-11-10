@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VueFlow, Panel } from "@vue-flow/core";
+import { VueFlow, Panel, useVueFlow } from "@vue-flow/core";
 import ZoomControls from "./ZoomControls.vue";
 import { Background } from "@vue-flow/background";
 import { useSchemaDiagram } from "@/composables/useSchemaDiagram";

@@ -5,9 +5,10 @@
         :marker-end="`url(#${markerEndId})`" :style="style" />
     </g>
 
-    <CrowsFootMarker :id="markerStartId" :type="markerStartType" :width="18" :height="18"
+    <CrowsFootMarker :id="markerStartId" :type="markerStartType" :width="18" :height="18" :stroke="'var(--edge-stroke)'"
+      debug-label="F" />
+    <CrowsFootMarker :id="markerEndId" :type="markerEndType" debug-label="T" :width="18" :height="18"
       :stroke="'var(--edge-stroke)'" />
-    <CrowsFootMarker :id="markerEndId" :type="markerEndType" :width="18" :height="18" :stroke="'var(--edge-stroke)'" />
   </g>
 </template>
 
@@ -22,7 +23,11 @@ import { getEdgeParams } from "@/utils/floatingEdgeHelpers";
 import { defineComponent, type PropType } from "vue";
 import { getHandleId, type EdgeData } from "@/composables/useSchemaDiagram";
 import { useSchema } from "@/composables/useSchema";
-import { type Column } from "@/composables/useSchemaDiagram";
+import {
+  type Column,
+  type ColumnStructure,
+  type ColumnReference,
+} from "@/composables/useSchemaDiagram";
 import { mapActions } from "pinia";
 import CrowsFootMarker from "@/components/CrowsFootMarker.vue";
 
@@ -158,9 +163,7 @@ export default defineComponent({
           targetPosition: this.edgeParams.targetPos,
         });
 
-        if (
-          this.source === this.target
-        ) {
+        if (this.source === this.target) {
           // FIXME we don't need to use getBezierPath for self referential
           // relations like this
           let [i, j, k, l] = path.split(" ") as [
@@ -192,40 +195,61 @@ export default defineComponent({
       return `${this.id}-marker-end`;
     },
     markerStartType() {
-      return this.getMarkerType(this.data.from);
+      return this.cardinality.from;
     },
     markerEndType() {
-      return this.getMarkerType(this.data.to);
+      return this.cardinality.to;
+    },
+    cardinality(): {
+      from: "none" | "one" | "one-or-many";
+      to: "none" | "one" | "one-or-many";
+    } {
+      const fromEntity = this.findColumnStructuresByEntity(
+        this.data.from.entity,
+      );
+
+      const fromColumn = this.findColumnStrucuture(this.data.from);
+
+      if (!fromEntity || !fromColumn) {
+        return {
+          from: "none",
+          to: "none",
+        };
+      }
+
+      if (fromEntity.isComposite && fromColumn.foreignKey) {
+        return {
+          from: "one-or-many",
+          to: "one",
+        };
+      }
+
+      if (fromColumn.foreignKey && fromColumn.primaryKey) {
+        return {
+          from: "one",
+          to: "one",
+        };
+      }
+
+      if (fromColumn.foreignKey) {
+        return {
+          from: "one-or-many",
+          to: "one",
+        };
+      }
+
+      return {
+        from: "none",
+        to: "none",
+      };
     },
   },
 
   methods: {
-    ...mapActions(useSchema, ["findColumnStrucuture"]),
-
-    getMarkerType(column: Column) {
-      const col = this.findColumnStrucuture(column);
-
-      if (!col) {
-        return "none";
-      }
-
-      // FK + PK/unique → 1:1
-      if (col.foreignKey && (col.primaryKey || col.uniqueKey)) {
-        return "one";
-      }
-
-      // plain FK → many side
-      if (col.foreignKey) {
-        return "one-or-many";
-      }
-
-      // PK/unique but not FK → one side
-      if (col.primaryKey || col.uniqueKey) {
-        return "one";
-      }
-
-      return "none";
-    },
+    ...mapActions(useSchema, [
+      "findColumnStrucuture",
+      "findColumnStructuresByEntity",
+    ]),
   },
 
   setup() {

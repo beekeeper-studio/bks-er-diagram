@@ -25,9 +25,9 @@ type ColumnName = string;
 type EntityName = string;
 type SchemaName = string;
 
-type ColumnStructureId =
-  | `${SchemaName}.${EntityName}.${ColumnName}`
-  | `${EntityName}.${ColumnName}`;
+type EntityStructureId = `${SchemaName}.${EntityName}` | `${EntityName}`;
+
+type ColumnStructureId = `${EntityStructureId}.${ColumnName}`;
 
 type BaseSchemaStreamOptions = {
   /**
@@ -81,9 +81,11 @@ function getColumnStructureId(
   entity: Entity,
   column: string,
 ): ColumnStructureId {
-  return entity.schema
-    ? (`${entity.schema}.${entity.name}.${column}` as const)
-    : (`${entity.name}.${column}` as const);
+  return `${getEntityStructureId(entity)}.${column}`;
+}
+
+function getEntityStructureId(entity: Entity): EntityStructureId {
+  return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
 export const useSchema = defineStore("schema", () => {
@@ -91,6 +93,9 @@ export const useSchema = defineStore("schema", () => {
   const isStreaming = shallowRef(false);
   const columnStructureMap = shallowRef(
     new Map<ColumnStructureId, ColumnStructure>(),
+  );
+  const entityStructureMap = shallowRef(
+    new Map<EntityStructureId, EntityStructure>(),
   );
 
   function throwIfAborted(signal?: AbortSignal) {
@@ -135,6 +140,7 @@ export const useSchema = defineStore("schema", () => {
           schema: tables[i]!.schema,
           type: "table",
           columns: [],
+          isComposite: false,
         };
 
         try {
@@ -158,7 +164,8 @@ export const useSchema = defineStore("schema", () => {
           console.error(error);
         }
 
-        entityBatch.push(entity);
+        entityBatch.unshift(entity);
+        entityStructureMap.value.set(getEntityStructureId(entity), entity);
 
         progress.value = (i + 0.66) / tables.length;
 
@@ -170,6 +177,7 @@ export const useSchema = defineStore("schema", () => {
                   ...reference.from.entity,
                   type: "table",
                   columns: [],
+                  isComposite: false,
                 };
                 await fillEntityStructureWithColumns(fromEntity);
                 await findReferencesAndUpdateEntity(fromEntity);
@@ -179,6 +187,7 @@ export const useSchema = defineStore("schema", () => {
                   ...reference.to.entity,
                   type: "table",
                   columns: [],
+                  isComposite: false,
                 };
                 await fillEntityStructureWithColumns(toEntity);
                 await findReferencesAndUpdateEntity(toEntity);
@@ -237,6 +246,7 @@ export const useSchema = defineStore("schema", () => {
         primaryKey: false,
         foreignKey: false,
         uniqueKey: false,
+        nullable: column.nullable ?? false,
       };
       columnStructureMap.value.set(
         getColumnStructureId(entity, column.name),
@@ -253,6 +263,7 @@ export const useSchema = defineStore("schema", () => {
         schema: entity.schema,
       },
     });
+    let pkCount = 0;
     indexes.forEach((index) => {
       index.columns.forEach((c) => {
         const column = findColumnStrucuture({
@@ -262,9 +273,14 @@ export const useSchema = defineStore("schema", () => {
         if (column) {
           column.primaryKey = index.primary;
           column.uniqueKey = index.unique;
+          pkCount++;
         }
       });
     });
+
+    if (pkCount > 1) {
+      entity.isComposite = true;
+    }
 
     // HACK: the demo.db file in beekeeper studio somehow does not have indexes?
     // FIXME make a new function in plugin lib
@@ -275,6 +291,9 @@ export const useSchema = defineStore("schema", () => {
         schema: entity.schema,
       },
     });
+    if (pks.length > 1) {
+      entity.isComposite = true;
+    }
     pks.forEach((pk) => {
       const column = findColumnStrucuture({
         entity,
@@ -344,11 +363,16 @@ export const useSchema = defineStore("schema", () => {
     );
   }
 
+  function findColumnStructuresByEntity(entity: Entity) {
+    return entityStructureMap.value.get(getEntityStructureId(entity));
+  }
+
   return {
     stream,
     progress: computed(() => progress.value),
     isStreaming: computed(() => isStreaming.value),
     findColumnStrucuture,
+    findColumnStructuresByEntity,
     columnStructureMap,
   };
 });

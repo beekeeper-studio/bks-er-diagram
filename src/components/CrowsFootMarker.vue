@@ -16,19 +16,32 @@
           'stroke-width': strokeWidth,
         }" />
         <line x1="0" y1="4" x2="0" y2="-4" stroke-linecap="round" :style="{ stroke, 'stroke-width': strokeWidth }" />
+        <text v-if="debugUI" x="0" y="10" :style="{ stroke: 'rgb(from red r g b / 0.5)', fontSize: '0.5rem' }">
+          {{ debugLabel }}
+        </text>
       </marker>
       <marker v-else-if="type === 'one'" :id="id" class="vue-flow__arrowhead" viewBox="-10 -10 20 20" refX="0" refY="0"
         :markerWidth="width" :markerHeight="height" markerUnits="strokeWidth" orient="auto-start-reverse">
         <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :style="{ stroke, 'stroke-width': strokeWidth }" />
         <line x1="4" y1="4" x2="4" y2="-4" stroke-linecap="round" :style="{ stroke, 'stroke-width': strokeWidth }" />
+        <text v-if="debugUI" x="0" y="10" :style="{ stroke: 'rgb(from red r g b / 0.5)', fontSize: '0.5rem' }">
+          {{ debugLabel }}
+        </text>
       </marker>
-      <marker v-else :id="id" class="vue-flow__arrowhead" viewBox="-10 -10 20 20" refX="0" refY="0"
+      <marker v-else :id="id" class="vue-flow__arrowhead" viewBox="-10 -10 20 20" refX="0" refY="0" :markerWidth="width"
+        :markerHeight="height" markerUnits="strokeWidth" orient="auto-start-reverse">
+        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :style="{ stroke, 'stroke-width': strokeWidth }" />
+        <text v-if="debugUI" x="0" y="10" :style="{ stroke: 'rgb(from red r g b / 0.5)', fontSize: '0.5rem' }">
+          {{ debugLabel }}
+        </text>
       </marker>
     </defs>
   </svg>
 </template>
 
 <script lang="ts">
+import { useDebug } from "@/composables/useDebug";
+import { mapGetters } from "pinia";
 import { defineComponent, type PropType } from "vue";
 
 export default defineComponent({
@@ -41,6 +54,7 @@ export default defineComponent({
       type: String as PropType<"one" | "one-or-many" | "none">,
       required: true,
     },
+    debugLabel: String,
     stroke: {
       type: String,
       required: false,
@@ -66,6 +80,10 @@ export default defineComponent({
       required: false,
       default: 12.5,
     },
+  },
+
+  computed: {
+    ...mapGetters(useDebug, ["debugUI"]),
   },
 });
 </script>

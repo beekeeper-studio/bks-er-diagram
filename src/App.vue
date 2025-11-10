@@ -13,12 +13,14 @@ import {
   setTabTitle,
 } from "@beekeeperstudio/plugin";
 import { useSchema } from "./composables/useSchema";
+import { useDebug } from "./composables/useDebug";
 
 const diagram = useSchemaDiagram();
 const { stream, progress } = useSchema();
 const state = ref<"uninitialized" | "initializing" | "aborting" | "ready">(
   "uninitialized",
 );
+const debug = useDebug();
 
 let abortController: AbortController | undefined;
 
@@ -85,17 +87,16 @@ onMounted(async () => {
 onUnmounted(() => {
   removeNotificationListener("tablesChanged", initialize);
 });
-
-function nothing() { }
 </script>
 
 <template>
   <div class="schema-diagram-container">
     <SchemaDiagram :disabled="state === 'initializing' || state === 'aborting'">
       <template #menu>
-        <button @click="nothing()" style="height: 2rem; font-weight: 500" class="btn btn-flat">
-          <span class="material-symbols-outlined">refresh</span>
-          <span>Nothing yet</span>
+        <button v-if="debug.isDevMode" @click="debug.toggleDebugUI" style="height: 2rem; font-weight: 500"
+          class="btn btn-flat">
+          <span class="material-symbols-outlined" v-show="debug.isDebuggingUI">check</span>
+          <span>[DEV] Toggle Debug UI</span>
         </button>
       </template>
     </SchemaDiagram>
@@ -124,6 +125,49 @@ function nothing() { }
       <button @click="abort" :disabled="state === 'aborting'" class="btn btn-flat">
         {{ state === "aborting" ? "Cancelling" : "Cancel" }}
       </button>
+    </div>
+    <div v-if="debug.isDebuggingUI" style="
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      ">
+      <div style="
+          background-color: var(--query-editor-bg);
+          border: 1px solid var(--border-color);
+          padding: 0.5rem;
+        ">
+        <span v-if="diagram.selectedEntities.length === 0">Select an entity to inspect</span>
+        <template v-for="entity in diagram.selectedEntities">
+          <div>
+            <div style="font-weight: bold; margin-bottom: 0.5rem">
+              {{ entity.name }}
+            </div>
+            <ul>
+              <li v-for="column in entity.columns" :key="column.name">
+                {{ column.name }} {{ column.primaryKey ? "PK" : "" }}
+                {{ column.foreignKey ? "FK" : "" }}
+                {{ column.uniqueKey ? "UK" : "" }}
+              </li>
+            </ul>
+          </div>
+        </template>
+      </div>
+      <div style="
+          background-color: var(--query-editor-bg);
+          border: 1px solid var(--border-color);
+          padding: 0.5rem;
+        ">
+        <div style="font-weight: bold; margin-bottom: 0.5rem">
+          Edge markers:
+        </div>
+        <ul>
+          <li><span style="color: red">F</span> = From</li>
+          <li><span style="color: red">T</span> = To</li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>

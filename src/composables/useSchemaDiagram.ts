@@ -19,12 +19,15 @@ export type ColumnStructure = Column & {
   hasReferences: boolean;
   primaryKey: boolean;
   foreignKey: boolean;
+  uniqueKey: boolean;
+  nullable: boolean;
   ordinalPosition: number;
 };
 
 export type EntityStructure = Entity & {
   type: "table";
   columns: ColumnStructure[];
+  isComposite: boolean;
 };
 
 export type ColumnReference = {
@@ -96,7 +99,6 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomTo: vueFlowZoomTo,
     getNodes,
     getSelectedNodes,
-    maxZoom,
   } = useVueFlow();
 
   const { layout: layoutLayout } = useLayout();
@@ -150,6 +152,10 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     getSelectedNodes.value.map((node) => node.id),
   );
 
+  const selectedEntities = computed<EntityStructure[]>(() =>
+    getSelectedNodes.value.map((node) => node.data),
+  );
+
   /**
    * You can make things thicker when user zooms out with this multipler. To
    * use, multiply the desired thickness with this multiplier.
@@ -192,6 +198,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     layout,
     getNodes,
     selectedNodes,
+    selectedEntities,
     thicknessMultipler,
   };
 });

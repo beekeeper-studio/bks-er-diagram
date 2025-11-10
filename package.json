@@ -30,6 +30,7 @@
     "sass": "^1.93.2",
     "typescript": "~5.9.3",
     "vite": "^7.1.7",
+    "vite-plugin-vue-devtools": "^8.0.3",
     "vue-tsc": "^3.1.0"
   }
 }
