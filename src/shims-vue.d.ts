@@ -5,6 +5,9 @@ declare module "@vue/runtime-core" {
   interface ComponentCustomProperties {
     $pluralize: typeof pluralize;
     $openExternal: typeof openExternal;
+    $bks: {
+      openMenu(event: MouseEvent, items: MenuItem[]): void;
+    }
   }
 }
 

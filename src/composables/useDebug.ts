@@ -1,3 +1,4 @@
+import { isDevMode } from "@/config";
 import { defineStore } from "pinia";
 
 export const useDebug = defineStore("debug", {
@@ -6,11 +7,8 @@ export const useDebug = defineStore("debug", {
   }),
 
   getters: {
-    isDevMode() {
-      return import.meta.env.DEV;
-    },
     isDebuggingUI(state) {
-      if (!this.isDevMode) {
+      if (!isDevMode) {
         return false;
       }
       return state.debugUI;

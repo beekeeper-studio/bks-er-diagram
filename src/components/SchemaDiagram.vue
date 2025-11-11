@@ -18,8 +18,10 @@
           <span class="material-symbols-outlined">menu</span>
         </button>
         <Menu :model="menuItems" :popup="true" ref="menu">
-          <template #itemicon="{item}">
-            <span class="material-symbols-outlined menu-icon" >{{ item.icon }}</span>
+          <template #itemicon="{ item }">
+            <span class="material-symbols-outlined menu-icon">{{
+              item.icon
+              }}</span>
           </template>
         </Menu>
       </Panel>

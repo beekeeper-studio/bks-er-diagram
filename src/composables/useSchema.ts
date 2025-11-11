@@ -38,36 +38,23 @@ type BaseSchemaStreamOptions = {
    */
   minBatchSize?: number;
   /**
-   * Name of the schema to stream.
-   *
-   * If omitted, the default schema will be used.
-   */
-  schema?: string;
-  /**
    * The signal to cancel the stream.
    */
   signal?: AbortSignal;
 };
 
 export type SchemaStreamOptions =
-  | BaseSchemaStreamOptions
   | (BaseSchemaStreamOptions & {
     /**
-     * The name of a specific entity to stream.
-     *
-     * If omitted, all entities in the schema will be streamed.
-     * If provided, only that entity and its related entities
-     * (based on `depth`) will be streamed.
-     *
-     * @todo NOT IMPLEMENTED
+     * A specific entity to stream.
      */
-    entity: string;
+    entity: Entity;
     /**
      * How many levels of related entities to include.
      *
      * - `0` = only the specified entity.
      * - `1` = include directly related entities (default).
-     * - `2+` = include deeper relationships.
+     * - `>1` = include deeper relationships.
      *
      * Can only be specified if `entity` is provided.
      *
@@ -75,6 +62,12 @@ export type SchemaStreamOptions =
      * @todo NOT IMPLEMENTED
      */
     depth?: number;
+  })
+  | (BaseSchemaStreamOptions & {
+    /**
+     * Stream all entities in this schema if specified.
+     */
+    schema?: string;
   });
 
 function getColumnStructureId(
@@ -104,7 +97,7 @@ export const useSchema = defineStore("schema", () => {
     }
   }
 
-  /** Use this to load the entities and keys in batches.  */
+  /** Load entities and keys in batches.  */
   async function* stream(options?: SchemaStreamOptions): AsyncGenerator<{
     entities: EntityStructure[];
     keys: ColumnReference[];
@@ -124,10 +117,12 @@ export const useSchema = defineStore("schema", () => {
       if ("entity" in options) {
         tables = [
           {
-            name: options.entity,
-            schema: options.schema,
+            name: options.entity.name,
+            schema: options.entity.schema,
           },
         ];
+      } else if ("schema" in options) {
+        tables = await getTables(options.schema);
       } else {
         tables = await getTables(options.schema);
       }

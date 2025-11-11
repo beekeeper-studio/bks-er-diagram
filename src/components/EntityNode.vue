@@ -1,5 +1,5 @@
 <template>
-  <div class="entity-node" :class="{ highlighted }">
+  <div class="entity-node" :class="{ highlighted }" @contextmenu="handleContextMenu">
     <Handle type="source" :position="Position.Top" :connectable="false" />
     <Handle type="source" :position="Position.Bottom" :connectable="false" />
     <div class="entity-name">
@@ -82,11 +82,21 @@ export default defineComponent({
     },
   },
 
+  methods: {
+    handleContextMenu(event: MouseEvent) {
+      event.preventDefault();
+      this.addSelectedNodes([this.getNode(this.id)!]);
+      this.$bks.openMenu(event, [{ label: "Show all columns" }]);
+    },
+  },
+
   setup() {
-    const { getConnectedEdges } = useVueFlow();
+    const { getConnectedEdges, addSelectedNodes, getNode } = useVueFlow();
     return {
       Position,
       getConnectedEdges,
+      addSelectedNodes,
+      getNode,
     };
   },
 });

@@ -5,15 +5,15 @@ import App from "./App.vue";
 import {
   addNotificationListener,
   getAppInfo,
-  getViewContext,
-  log,
   openExternal,
   type AppTheme,
 } from "@beekeeperstudio/plugin";
 import { VueKeyboardTrapDirectivePlugin } from "@pdanpdan/vue-keyboard-trap";
 import pluralize from "pluralize";
 import { createPinia } from "pinia";
-import PrimeVue from 'primevue/config';
+import PrimeVue from "primevue/config";
+import { useContextMenu } from "./composables/useContextMenu";
+import type { MenuItem } from "primevue/menuitem";
 
 function applyTheme(theme: AppTheme) {
   document.querySelector("#app-theme")!.textContent =
@@ -40,6 +40,16 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(PrimeVue);
 app.use(VueKeyboardTrapDirectivePlugin, {});
+app.use({
+  install(app) {
+    app.config.globalProperties.$bks = {
+      openMenu(event: MouseEvent, items: MenuItem[]) {
+        const contextMenu = useContextMenu();
+        contextMenu.openMenu(event, items);
+      },
+    };
+  },
+});
 app.config.globalProperties.$pluralize = pluralize;
 app.config.globalProperties.$openExternal = openExternal;
 app.mount("#app");

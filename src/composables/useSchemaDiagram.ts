@@ -1,4 +1,9 @@
-import { useVueFlow, type Edge, type Node } from "@vue-flow/core";
+import {
+  useVueFlow,
+  type Edge,
+  type Node,
+  getRectOfNodes,
+} from "@vue-flow/core";
 import { defineStore } from "pinia";
 import { computed, ref, shallowRef, watch } from "vue";
 import { useLayout } from "./useLayout";
@@ -94,6 +99,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     edges,
     fitView,
     viewport,
+    setViewport,
     zoomIn,
     zoomOut,
     zoomTo: vueFlowZoomTo,
@@ -108,11 +114,13 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
    * recommended to use this as a readonly ref and use `add` to modify it.
    **/
   const entitiesRef = ref<EntityStructure[]>([]);
-  const showAllColumns = shallowRef(localStorage.getItem("show-all-columns") === "true");
+  const showAllColumns = shallowRef(
+    localStorage.getItem("show-all-columns") === "true",
+  );
 
   watch(showAllColumns, () => {
     localStorage.setItem("show-all-columns", showAllColumns.value.toString());
-  })
+  });
 
   /**
    * Add entities to the diagram. Use `await` or `.then()` to wait for the
@@ -187,6 +195,8 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     return 1 / viewport.value.zoom - 1 / 2 + 0.95;
   });
 
+  const rectOfDiagram = computed(() => getRectOfNodes(nodes.value));
+
   return {
     entities: entitiesRef,
     nodes,
@@ -206,5 +216,8 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     selectedEntities,
     thicknessMultipler,
     showAllColumns,
+    viewport: computed(() => viewport.value),
+    rectOfDiagram,
+    setViewport,
   };
 });

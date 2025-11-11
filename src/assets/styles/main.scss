@@ -30,4 +30,31 @@
       background-color: var(--theme-primary);
     }
   }
+
+  .debug-panel {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+
+    >section {
+      background-color: var(--query-editor-bg);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      max-height: 30vh;
+      overflow: auto;
+      width: 14rem;
+    }
+
+    h2,
+    h3,
+    h4 {
+      margin: 0;
+      padding: 0;
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+  }
 }
