@@ -1,9 +1,9 @@
 <template>
-  <div class="entity-node" :class="{ highlighted }" @contextmenu="handleContextMenu">
+  <div class="table-node" :class="{ highlighted, selected }" @contextmenu="handleContextMenu">
     <Handle type="source" :position="Position.Top" :connectable="false" />
     <Handle type="source" :position="Position.Bottom" :connectable="false" />
-    <div class="entity-name">
-      <span class="material-symbols-outlined entity-icon"> grid_on </span>
+    <div class="table-name">
+      <span class="material-symbols-outlined table-icon"> grid_on </span>
       <span>
         {{ data.name }}
       </span>
@@ -12,8 +12,10 @@
     <!--   <span class="material-symbols-outlined">more_vert</span> -->
     <!-- </button> -->
     <div>
-      <Columns :columns="referencedColumns" />
-      <Columns v-if="showAllColumns" :columns="normalColumns" />
+      <ul class="columns">
+        <Columns :columns="referencedColumns" />
+        <Columns v-if="showAllColumns" :columns="normalColumns" />
+      </ul>
     </div>
   </div>
 </template>
@@ -21,14 +23,15 @@
 <script lang="ts">
 import {
   useSchemaDiagram,
-  type EntityStructure,
+  type ColumnStructure,
+  type TableEntityStructure,
 } from "@/composables/useSchemaDiagram";
 import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
-import { mapGetters } from "pinia";
+import { mapActions, mapGetters } from "pinia";
 import { defineComponent, type PropType } from "vue";
 import Columns from "@/components/Columns.vue";
 
-type Props = NodeProps<EntityStructure>;
+type Props = NodeProps<TableEntityStructure>;
 
 export default defineComponent({
   // Avoid vue flow from adding unneeded attributes to the root element
@@ -62,13 +65,16 @@ export default defineComponent({
       );
     },
     referencedColumns() {
-      return this.columns.filter((column) => column.hasReferences);
+      return this.columns.filter(this.isReferencedColumn);
     },
     normalColumns() {
-      return this.columns.filter((column) => !column.hasReferences);
+      return this.columns.filter((column) => !this.isReferencedColumn(column));
+    },
+    connectedEdges() {
+      return this.getConnectedEdges(this.id);
     },
     connectedNodes(): string[] {
-      return this.getConnectedEdges(this.id).map((edge) => {
+      return this.connectedEdges.map((edge) => {
         if (edge.source === this.id) {
           return edge.target;
         }
@@ -76,17 +82,36 @@ export default defineComponent({
       });
     },
     highlighted() {
-      return this.connectedNodes.some((node) =>
-        this.selectedNodes.includes(node),
-      );
+      if (
+        this.connectedNodes.some(
+          (node) => this.selectedNodes.includes(node) && node !== this.id,
+        )
+      ) {
+        return true;
+      }
+      if (this.connectedEdges.some((edge) => edge.selected)) {
+        return true;
+      }
+      return false;
     },
   },
 
   methods: {
+    ...mapActions(useSchemaDiagram, ["toggleHideEntity"]),
     handleContextMenu(event: MouseEvent) {
       event.preventDefault();
       this.addSelectedNodes([this.getNode(this.id)!]);
-      this.$bks.openMenu(event, [{ label: "Show all columns" }]);
+      this.$bks.openMenu(event, [
+        {
+          label: `Hide ${this.data.name}`,
+          command: () => {
+            this.toggleHideEntity(this.data, true);
+          },
+        },
+      ]);
+    },
+    isReferencedColumn(column: ColumnStructure) {
+      return column.hasReferences || column.primaryKey || column.foreignKey;
     },
   },
 

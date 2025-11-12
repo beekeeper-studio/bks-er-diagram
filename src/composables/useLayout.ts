@@ -1,6 +1,7 @@
 import dagre from "@dagrejs/dagre";
-import { Position, useVueFlow, type Edge, type Node } from "@vue-flow/core";
+import { useVueFlow, type Edge, type Node } from "@vue-flow/core";
 import { ref } from "vue";
+import type { EntityStructure } from "@/composables/useSchemaDiagram";
 
 /**
  * Composable to run the layout algorithm on the graph.
@@ -13,16 +14,26 @@ export function useLayout() {
 
   const direction = ref("LR");
 
-  function layout(nodes: Node[], edges: Edge[], dir: string) {
+  function layout(nodes: Node<EntityStructure>[], edges: Edge[], dir: string) {
     // we create a new graph instance, in case some nodes/edges were removed, otherwise dagre would act as if they were still there
-    const dagreGraph = new dagre.graphlib.Graph();
+    const dagreGraph = new dagre.graphlib.Graph({
+      compound: true,
+      directed: true,
+    });
 
     graph.value = dagreGraph;
 
     dagreGraph.setDefaultEdgeLabel(() => ({}));
 
     // const isHorizontal = dir === "LR";
-    dagreGraph.setGraph({ rankdir: "TB", ranker: 'longest-path', align: 'UR', nodesep: 100, acyclicer: "greedy", edgesep: 100});
+    dagreGraph.setGraph({
+      rankdir: "TB",
+      ranker: "longest-path",
+      align: "UR",
+      nodesep: 100,
+      acyclicer: "greedy",
+      edgesep: 100,
+    });
 
     direction.value = dir;
 
@@ -31,9 +42,13 @@ export function useLayout() {
       const graphNode = findNode(node.id)!;
 
       dagreGraph.setNode(node.id, {
-        width: graphNode.dimensions.width || 150,
-        height: graphNode.dimensions.height || 50,
+        width: graphNode.dimensions.width,
+        height: graphNode.dimensions.height,
       });
+
+      if (node.parentNode) {
+        dagreGraph.setParent(node.id, node.parentNode);
+      }
     }
 
     for (const edge of edges) {
@@ -45,6 +60,7 @@ export function useLayout() {
     // set nodes with updated positions
     return nodes.map((node) => {
       const nodeWithPosition = dagreGraph.node(node.id);
+      console.log(node.id, {x: nodeWithPosition.x, y: nodeWithPosition.y});
 
       return {
         ...node,

@@ -1,15 +1,9 @@
 <template>
-  <g :class="{ highlighted }">
-    <g class="vue-flow__connection">
-      <path :id="id" class="vue-flow__edge-path edge-path" :d="d" :marker-start="`url(#${markerStartId})`"
-        :marker-end="`url(#${markerEndId})`" :style="style" />
-    </g>
-
-    <CrowsFootMarker :id="markerStartId" :type="markerStartType" :width="18" :height="18" :stroke="'var(--edge-stroke)'"
-      debug-label="F" />
-    <CrowsFootMarker :id="markerEndId" :type="markerEndType" debug-label="T" :width="18" :height="18"
-      :stroke="'var(--edge-stroke)'" />
-  </g>
+  <path :id="id" class="vue-flow__edge-path edge-path" :class="{ highlighted }" :d="d"
+    :marker-start="`url(#${markerStartId})`" :marker-end="`url(#${markerEndId})`" :style="style" />
+  <path fill="none" class="vue-flow__edge-interaction" :d="d" stroke-opacity="0" stroke-width="30" />
+  <CrowsFootMarker :id="markerStartId" :highlighted="highlighted" :type="markerStartType" debug-label="F" />
+  <CrowsFootMarker :id="markerEndId" :highlighted="highlighted" :type="markerEndType" debug-label="T" />
 </template>
 
 <script lang="ts">
@@ -59,6 +53,7 @@ export default defineComponent({
       type: Object as PropType<Props["data"]>,
       required: true,
     },
+    selected: Boolean as PropType<Props["selected"]>,
     style: Object as PropType<Props["style"]>,
   },
 
@@ -136,9 +131,9 @@ export default defineComponent({
         const offsetY1 = handle1.height / 2;
         const offsetY2 = handle2.height / 2;
 
-        const x = this.sourceNode.position.x + handle1.x + offsetX;
-        const y1 = this.sourceNode.position.y + handle1.y + offsetY1;
-        const y2 = this.targetNode.position.y + handle2.y + offsetY2;
+        const x = this.sourceNode.computedPosition.x + handle1.x + offsetX;
+        const y1 = this.sourceNode.computedPosition.y + handle1.y + offsetY1;
+        const y2 = this.targetNode.computedPosition.y + handle2.y + offsetY2;
 
         return `M ${x} ${y1} C ${x + 50} ${y1}, ${x + 50} ${y2}, ${x} ${y2}`;
       }
@@ -156,7 +151,7 @@ export default defineComponent({
           );
           const idx = edges.findIndex((edge) => edge.id === this.id);
           const node = this.findNode(this.source)!;
-          const origin = node.position.x;
+          const origin = node.computedPosition.x;
           const x = (node.dimensions.width * (idx + 1)) / (1 + edges.length);
           sourceX = origin + x;
         }
@@ -170,7 +165,7 @@ export default defineComponent({
           );
           const idx = edges.findIndex((edge) => edge.id === this.id);
           const node = this.findNode(this.target)!;
-          const origin = node.position.x;
+          const origin = node.computedPosition.x;
           const x = (node.dimensions.width * (idx + 1)) / (1 + edges.length);
           targetX = origin + x;
         }
@@ -205,7 +200,8 @@ export default defineComponent({
       from: "none" | "one" | "one-or-many";
       to: "none" | "one" | "one-or-many";
     } {
-      const fromEntity = this.findColumnStructuresByEntity(
+      const fromEntity = this.findEntityStructure(
+        "table",
         this.data.from.entity,
       );
 
@@ -247,10 +243,7 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions(useSchema, [
-      "findColumnStrucuture",
-      "findColumnStructuresByEntity",
-    ]),
+    ...mapActions(useSchema, ["findColumnStrucuture", "findEntityStructure"]),
   },
 
   setup() {

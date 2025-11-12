@@ -11,6 +11,10 @@ import {
   type ColumnStructure,
   type Entity,
   type EntityStructure,
+  type SchemaEntity,
+  type SchemaEntityStructure,
+  type TableEntity,
+  type TableEntityStructure,
 } from "./useSchemaDiagram";
 import { computed, shallowRef } from "vue";
 import _ from "lodash";
@@ -46,9 +50,9 @@ type BaseSchemaStreamOptions = {
 export type SchemaStreamOptions =
   | (BaseSchemaStreamOptions & {
     /**
-     * A specific entity to stream.
+     * A specific table entity to stream.
      */
-    entity: Entity;
+    table: TableEntity;
     /**
      * How many levels of related entities to include.
      *
@@ -67,17 +71,31 @@ export type SchemaStreamOptions =
     /**
      * Stream all entities in this schema if specified.
      */
-    schema?: string;
+    schema?: SchemaEntity;
   });
 
 function getColumnStructureId(
-  entity: Entity,
+  table: TableEntity,
   column: string,
 ): ColumnStructureId {
-  return `${getEntityStructureId(entity)}.${column}`;
+  return `${getEntityStructureId("table", table)}.${column}`;
 }
 
-function getEntityStructureId(entity: Entity): EntityStructureId {
+function getEntityStructureId(
+  type: "table",
+  entity: TableEntity,
+): EntityStructureId;
+function getEntityStructureId(
+  type: "schema",
+  entity: SchemaEntity,
+): EntityStructureId;
+function getEntityStructureId(
+  type: "table" | "schema",
+  entity: Entity,
+): EntityStructureId {
+  if (type === "schema") {
+    return entity.name;
+  }
   return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
@@ -112,25 +130,23 @@ export const useSchema = defineStore("schema", () => {
     isStreaming.value = true;
 
     try {
-      let tables: Entity[];
+      let tables: TableEntity[];
 
-      if ("entity" in options) {
+      if ("table" in options) {
         tables = [
           {
-            name: options.entity.name,
-            schema: options.entity.schema,
+            name: options.table.name,
+            schema: options.table.schema,
           },
         ];
-      } else if ("schema" in options) {
-        tables = await getTables(options.schema);
       } else {
-        tables = await getTables(options.schema);
+        tables = await getTables(options.schema?.name);
       }
 
       for (let i = 0; i < tables.length; i++) {
         throwIfAborted(options?.signal);
 
-        const entity: EntityStructure = {
+        const table: EntityStructure = {
           name: tables[i]!.name,
           schema: tables[i]!.schema,
           type: "table",
@@ -138,8 +154,31 @@ export const useSchema = defineStore("schema", () => {
           isComposite: false,
         };
 
+        let schema: SchemaEntityStructure | undefined;
+
+        if (table.schema) {
+          const foundSchema = findEntityStructure("schema", {
+            name: table.schema,
+          });
+
+          if (!foundSchema) {
+            schema = {
+              name: table.schema,
+              type: "schema",
+              entities: [],
+            };
+            entityBatch.push(schema);
+            entityStructureMap.value.set(
+              getEntityStructureId("schema", schema),
+              schema,
+            );
+          } else {
+            schema = foundSchema;
+          }
+        }
+
         try {
-          await fillEntityStructureWithColumns(entity);
+          await fillEntityStructureWithColumns(table);
         } catch (error) {
           // TODO show helpful error here
           console.error(error);
@@ -152,22 +191,28 @@ export const useSchema = defineStore("schema", () => {
         let references: ColumnReference[] = [];
 
         try {
-          references = await findReferencesAndUpdateEntity(entity);
+          references = await findReferencesAndUpdateEntity(table);
           referenceBatch.push(...references);
         } catch (error) {
           // TODO show helpful error here
           console.error(error);
         }
 
-        entityBatch.unshift(entity);
-        entityStructureMap.value.set(getEntityStructureId(entity), entity);
+        entityBatch.push(table);
+        entityStructureMap.value.set(
+          getEntityStructureId("table", table),
+          table,
+        );
+        if (schema) {
+          schema.entities.push(table);
+        }
 
         progress.value = (i + 0.66) / tables.length;
 
         try {
           if ("entity" in options) {
             for (const reference of references) {
-              if (!entitiesEqual(reference.from.entity, entity)) {
+              if (!entitiesEqual(reference.from.entity, table)) {
                 const fromEntity: EntityStructure = {
                   ...reference.from.entity,
                   type: "table",
@@ -177,7 +222,7 @@ export const useSchema = defineStore("schema", () => {
                 await fillEntityStructureWithColumns(fromEntity);
                 await findReferencesAndUpdateEntity(fromEntity);
                 entityBatch.push(fromEntity);
-              } else if (!entitiesEqual(reference.to.entity, entity)) {
+              } else if (!entitiesEqual(reference.to.entity, table)) {
                 const toEntity: EntityStructure = {
                   ...reference.to.entity,
                   type: "table",
@@ -224,7 +269,7 @@ export const useSchema = defineStore("schema", () => {
   }
 
   /** Mutate `entity` structure by filling the `columns` array and setting the `columnStructureMap`. */
-  async function fillEntityStructureWithColumns(entity: EntityStructure) {
+  async function fillEntityStructureWithColumns(entity: TableEntityStructure) {
     const columns = await getColumns(entity.name, entity.schema);
 
     columns.forEach((column) => {
@@ -303,7 +348,7 @@ export const useSchema = defineStore("schema", () => {
   }
 
   /** Mutate `entity` structure by filling the `hasReferences` and `foreignKey` properties. */
-  async function findReferencesAndUpdateEntity(entity: EntityStructure) {
+  async function findReferencesAndUpdateEntity(entity: TableEntityStructure) {
     const references: ColumnReference[] = [];
     const keys = await getTableKeys(entity.name, entity.schema);
     for (const key of keys) {
@@ -360,8 +405,24 @@ export const useSchema = defineStore("schema", () => {
     );
   }
 
-  function findColumnStructuresByEntity(entity: Entity) {
-    return entityStructureMap.value.get(getEntityStructureId(entity));
+  function findEntityStructure(
+    type: "table",
+    entity: TableEntity,
+  ): TableEntityStructure;
+  function findEntityStructure(
+    type: "schema",
+    entity: SchemaEntity,
+  ): SchemaEntityStructure;
+  function findEntityStructure(
+    type: "table" | "schema",
+    entity: Entity,
+  ): EntityStructure | undefined {
+    if (type === "schema") {
+      return entityStructureMap.value.get(
+        getEntityStructureId("schema", entity),
+      );
+    }
+    return entityStructureMap.value.get(getEntityStructureId("table", entity));
   }
 
   return {
@@ -369,7 +430,7 @@ export const useSchema = defineStore("schema", () => {
     progress: computed(() => progress.value),
     isStreaming: computed(() => isStreaming.value),
     findColumnStrucuture,
-    findColumnStructuresByEntity,
+    findEntityStructure,
     columnStructureMap,
   };
 });

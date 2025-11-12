@@ -10,6 +10,7 @@
           var(--theme-base) 6%,
           var(--query-editor-bg));
       border-radius: 8px;
+      box-shadow: 0 0 0.5rem var(--query-editor-bg);
 
       .zoom-input {
         background-color: transparent;
@@ -39,64 +40,27 @@
     }
   }
 
-  .entity-node {
-    background-color: color-mix(in srgb,
-        var(--theme-base) 6%,
-        var(--query-editor-bg));
-    color: var(--text);
-    border-radius: 6px;
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
-
-    li {
-      &:nth-child(odd) {
-        background-color: color-mix(in srgb,
-            var(--theme-base) 4%,
-            var(--query-editor-bg));
-      }
-
-      &.primary-key .key-icon {
-        color: var(--theme-secondary);
-      }
-
-      &.foreign-key .key-icon {
-        color: var(--theme-primary);
-      }
-    }
-
-    &.highlighted {
-      outline-style: dashed;
-      outline-color: color-mix(in srgb, var(--theme-base) calc(50%), var(--theme-bg));
-      outline-width: calc(2px * var(--thickness-multipler));
-    }
-  }
-
-  .selected {
-    &>.entity-node {
-      outline-style: solid;
-      outline-color: color-mix(in srgb,
-          var(--theme-primary) 70%,
-          var(--theme-bg));
-      outline-width: calc(2px * var(--thickness-multipler));
-      outline-offset: calc(2px * var(--thickness-multipler));
-    }
-  }
-
-  .highlighted {
-    --edge-stroke: color-mix(in srgb, var(--theme-base) 50%, var(--theme-bg));
-  }
-
-  .edge-path {
-    stroke: var(--edge-stroke);
-    // stroke-width: calc(var(--edge-width) * var(--thickness-multipler));
-    stroke-width: var(--edge-width);
-  }
-
   .overlay {
     position: absolute;
     inset: 0;
     backdrop-filter: blur(10px);
     z-index: 4;
+  }
+}
+
+.hidden-entities-menu {
+  .p-menu-list {
+    max-height: 70vh;
+    overflow-y: auto;
+
+    .p-menu-item {
+      &.table .menu-icon {
+        color: var(--theme-primary);
+      }
+
+      &.schema .menu-icon {
+        color: color-mix(in srgb, var(--theme-base) 40%, var(--theme-bg));
+      }
+    }
   }
 }

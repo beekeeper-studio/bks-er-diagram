@@ -1,0 +1,33 @@
+.vue-flow__edge-floating {
+  --highlighted-stroke: color-mix(in srgb,
+      var(--theme-base) 50%,
+      var(--theme-bg));
+
+  .vue-flow__edge-path.edge-path {
+    stroke: var(--edge-stroke);
+    stroke-width: var(--edge-width);
+    // stroke-width: calc(var(--edge-width) * var(--thickness-multipler));
+
+    &.highlighted {
+      --edge-stroke: var(--highlighted-stroke);
+    }
+  }
+
+  .vue-flow__marker {
+    &.highlighted {
+      --edge-stroke: var(--highlighted-stroke);
+    }
+
+    marker>* {
+      stroke: var(--edge-stroke);
+      stroke-width: var(--edge-width);
+    }
+  }
+
+  &.selected {
+    --edge-stroke: color-mix(in srgb,
+        var(--theme-primary) 70%,
+        var(--theme-bg));
+    --edge-width: 2px;
+  }
+}

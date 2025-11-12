@@ -1,5 +1,9 @@
 <template>
-  <ContextMenu ref="menu" :model="items" />
+  <ContextMenu ref="menu" :model="items">
+    <template #itemicon="{ item }">
+      <span class="material-symbols-outlined menu-icon">{{ item.icon }}</span>
+    </template>
+  </ContextMenu>
 </template>
 
 <script lang="ts">

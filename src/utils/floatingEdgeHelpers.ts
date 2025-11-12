@@ -69,16 +69,16 @@ function getHandleCoordsByPosition(
       break;
   }
 
-  const x = node.position.x + handle.x + offsetX;
-  const y = node.position.y + handle.y + offsetY;
+  const x = node.computedPosition.x + handle.x + offsetX;
+  const y = node.computedPosition.y + handle.y + offsetY;
 
   return { x, y };
 }
 
 function getNodeCenter(node: GraphNode) {
   return {
-    x: node.position.x + node.dimensions.width / 2,
-    y: node.position.y + node.dimensions.height / 2,
+    x: node.computedPosition.x + node.dimensions.width / 2,
+    y: node.computedPosition.y + node.dimensions.height / 2,
   };
 }
 

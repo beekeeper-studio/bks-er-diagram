@@ -3,18 +3,25 @@ import {
   type Edge,
   type Node,
   getRectOfNodes,
+  type GraphNode,
 } from "@vue-flow/core";
 import { defineStore } from "pinia";
 import { computed, ref, shallowRef, watch } from "vue";
 import { useLayout } from "./useLayout";
 
-export type Entity = {
+export type TableEntity = {
   name: string;
   schema?: string;
 };
 
+export type SchemaEntity = {
+  name: string;
+};
+
+export type Entity = TableEntity | SchemaEntity;
+
 export type Column = {
-  entity: Entity;
+  entity: TableEntity;
   name: string;
 };
 
@@ -29,10 +36,17 @@ export type ColumnStructure = Column & {
   ordinalPosition: number;
 };
 
-export type EntityStructure = Entity & {
+export type EntityStructure = TableEntityStructure | SchemaEntityStructure;
+
+export type TableEntityStructure = TableEntity & {
   type: "table";
   columns: ColumnStructure[];
   isComposite: boolean;
+};
+
+export type SchemaEntityStructure = SchemaEntity & {
+  type: "schema";
+  entities: EntityStructure[];
 };
 
 export type ColumnReference = {
@@ -44,7 +58,12 @@ export type NodeData = EntityStructure;
 
 export type EdgeData = ColumnReference;
 
-function getNodeId(entity: Entity): string {
+export function getNodeId(type: "schema", entity: SchemaEntity): string;
+export function getNodeId(type: "table", entity: TableEntity): string;
+export function getNodeId(type: "table" | "schema", entity: Entity): string {
+  if (type === "schema") {
+    return entity.name;
+  }
   return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
@@ -68,10 +87,22 @@ export function getHandleId(column: Column): string {
 function generateNodes(entities: EntityStructure[]): Node<NodeData>[] {
   return entities.map((entity) => {
     return {
-      id: getNodeId(entity),
-      type: "table",
+      id: getNodeId(entity.type, entity),
+      type: entity.type,
       data: entity,
       position: { x: 0, y: 0 },
+      parentNode:
+        entity.type === "table" && entity.schema
+          ? getNodeId("schema", { name: entity.schema })
+          : undefined,
+      parentNodeId:
+        entity.type === "table" && entity.schema
+          ? getNodeId("schema", { name: entity.schema })
+          : undefined,
+      parentId:
+        entity.type === "table" && entity.schema
+          ? getNodeId("schema", { name: entity.schema })
+          : undefined,
     };
   });
 }
@@ -80,14 +111,13 @@ function generateEdges(references: ColumnReference[]): Edge<EdgeData>[] {
   return references.map((reference) => {
     return {
       id: getEdgeId(reference),
-      source: getNodeId(reference.from.entity),
-      target: getNodeId(reference.to.entity),
+      source: getNodeId("table", reference.from.entity),
+      target: getNodeId("table", reference.to.entity),
       data: reference,
       type: "floating",
     };
   });
 }
-// public.payment.customer_id->public.customer.customer_id
 
 export const useSchemaDiagram = defineStore("schema-diagram", () => {
   const {
@@ -111,7 +141,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   /**
    * Since we do some calculations when updating the entities, it is
-   * recommended to use this as a readonly ref and use `add` to modify it.
+   * recommended to use this as a readonly ref and use `addEntities` to modify it.
    **/
   const entitiesRef = ref<EntityStructure[]>([]);
   const showAllColumns = shallowRef(
@@ -197,6 +227,32 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   const rectOfDiagram = computed(() => getRectOfNodes(nodes.value));
 
+  const hiddenEntities = computed(() => {
+    const ret = [];
+    for (const node of nodes.value as GraphNode<EntityStructure>[]) {
+      if (node.hidden) {
+        ret.push(node.data);
+      }
+    }
+    return ret;
+  });
+
+  function toggleHideEntity(entity: Entity, hide?: boolean) {
+    const node = nodes.value.find(
+      (n) => n.id === getNodeId(entity.type, entity),
+    );
+    if (node) {
+      setNodes((nodes) => {
+        return nodes.map((n) => {
+          if (n.id === node.id) {
+            n.hidden = typeof hide === "boolean" ? hide : !n.hidden;
+          }
+          return n;
+        });
+      });
+    }
+  }
+
   return {
     entities: entitiesRef,
     nodes,
@@ -219,5 +275,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     viewport: computed(() => viewport.value),
     rectOfDiagram,
     setViewport,
+    hiddenEntities,
+    toggleHideEntity,
   };
 });

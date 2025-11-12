@@ -1,0 +1,47 @@
+.schema-node {
+  color: var(--text);
+  border-radius: 6px;
+  border: 3px dashed var(--border-color);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  // --width-offset: 1rem;
+  // width: calc(var(--min-width, auto) + var(--width-offset));
+  // height: calc(var(--min-height, auto) + var(--width-offset));
+
+  &.selected {
+    outline-style: solid;
+    outline-color: color-mix(in srgb,
+        var(--theme-primary) 70%,
+        var(--theme-bg));
+    outline-width: calc(2px * var(--thickness-multipler));
+    outline-offset: calc(2px * var(--thickness-multipler));
+  }
+
+  &.highlighted {
+    outline-style: dashed;
+    outline-color: color-mix(in srgb,
+        var(--theme-base) calc(50%),
+        var(--theme-bg));
+    outline-width: calc(2px * var(--thickness-multipler));
+  }
+
+  .schema-name {
+    height: 2.5rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    padding-left: 0.75rem;
+    margin-right: 0.75rem;
+  }
+
+  .schema-icon {
+    font-size: 1.25em;
+    margin-right: 0.5rem;
+    color: color-mix(in srgb, var(--theme-base) 40%, var(--theme-bg));
+    font-variation-settings: "FILL" 1;
+  }
+}

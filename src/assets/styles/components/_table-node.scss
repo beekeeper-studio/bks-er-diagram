@@ -1,0 +1,102 @@
+.table-node {
+  background-color: color-mix(in srgb,
+      var(--theme-base) 6%,
+      var(--query-editor-bg));
+  color: var(--text);
+  border-radius: 6px;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  li {
+    &:nth-child(odd) {
+      background-color: color-mix(in srgb,
+          var(--theme-base) 4%,
+          var(--query-editor-bg));
+    }
+
+    &.primary-key .key-icon {
+      color: var(--theme-secondary);
+    }
+
+    &.foreign-key .key-icon {
+      color: var(--theme-primary);
+    }
+  }
+
+  &.selected {
+    outline-style: solid;
+    outline-color: color-mix(in srgb,
+        var(--theme-primary) 70%,
+        var(--theme-bg));
+    outline-width: calc(2px * var(--thickness-multipler));
+    outline-offset: calc(2px * var(--thickness-multipler));
+  }
+
+  &.highlighted {
+    outline-style: dashed;
+    outline-color: color-mix(in srgb,
+        var(--theme-base) calc(50%),
+        var(--theme-bg));
+    outline-width: calc(2px * var(--thickness-multipler));
+  }
+
+  .table-name {
+    height: 2.5rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    padding-left: 0.75rem;
+    margin-right: 0.75rem;
+  }
+
+  .table-icon {
+    font-size: 1.25em;
+    margin-right: 0.5rem;
+    color: var(--theme-primary);
+  }
+
+  .columns {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    >li {
+      position: relative;
+      margin: 0;
+      padding: 0;
+    }
+
+    .column-content {
+      display: flex;
+      align-items: center;
+      height: 2.75rem;
+      padding-left: 0.75rem;
+      padding-right: 1rem;
+
+      .column-name {
+        margin-right: 0.5rem;
+      }
+
+      .column-type {
+        margin-left: auto;
+        color: var(--text-muted-2);
+      }
+    }
+
+    .column-icon-container {
+      --icon-size: 1.25em;
+      display: inline-flex;
+      width: var(--icon-size);
+      margin-right: 0.5rem;
+
+      .key-icon {
+        font-size: var(--icon-size);
+        font-variation-settings: "FILL" 1;
+      }
+    }
+  }
+}

@@ -7,7 +7,6 @@ import {
   reactive,
   ref,
   useTemplateRef,
-  watch,
 } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
 import {
@@ -73,7 +72,9 @@ async function initialize(options?: {
         await processStream(
           stream({
             signal: abortController.signal,
-            schema,
+            schema: {
+              name: schema,
+            },
             ...options.streamOptions,
           }),
         );
@@ -87,6 +88,7 @@ async function initialize(options?: {
       );
     }
 
+    await diagram.addKeys(allKeys);
     await nextTick();
     await new Promise((resolve) => setTimeout(resolve, 250));
     diagram.layout();
@@ -114,7 +116,7 @@ onMounted(async () => {
   if (viewContext.command === "openTableStructureSchema") {
     await initialize({
       streamOptions: {
-        entity: {
+        table: {
           schema: viewContext.params.entity.schema,
           name: viewContext.params.entity.name,
         },
@@ -154,14 +156,14 @@ const menuItems = computed(
       },
       ...(isDevMode
         ? [
-            {
-              label: "[DEV] Toggle Debug UI",
-              command() {
-                debug.toggleDebugUI();
-              },
-              icon: debug.isDebuggingUI ? "check" : "",
+          {
+            label: "[DEV] Toggle Debug UI",
+            command() {
+              debug.toggleDebugUI();
             },
-          ]
+            icon: debug.isDebuggingUI ? "check" : "",
+          },
+        ]
         : []),
     ] as MenuItem[],
 );
@@ -308,6 +310,16 @@ const vThumbStyle = computed(() => {
     top: topPercent + "%",
   };
 });
+const showVerticalScrollbar = computed(() => {
+  const total = scrollRangeScreenY.value;
+  const visible = containerHeightScreen.value || 1;
+  return total > visible;
+})
+const showHorizontalScrollbar = computed(() => {
+  const total = scrollRangeScreenX.value;
+  const visible = containerWidthScreen.value || 1;
+  return total > visible;
+})
 // drag state for vertical
 const dragV = reactive({
   active: false,
@@ -356,19 +368,11 @@ function stopVDrag() {
 
 <template>
   <div class="schema-diagram-container" ref="container">
-    <SchemaDiagram
-      :disabled="state === 'initializing' || state === 'aborting'"
-      :menu-items="menuItems"
-    />
+    <SchemaDiagram :disabled="state === 'initializing' || state === 'aborting'" :menu-items="menuItems" />
 
-    <div
-      v-if="state === 'initializing' || state === 'aborting'"
-      class="loading-progress"
-      :style="{ width: `${progress * 100}%` }"
-    />
-    <div
-      v-if="state === 'initializing' || state === 'aborting'"
-      style="
+    <div v-if="state === 'initializing' || state === 'aborting'" class="loading-progress"
+      :style="{ width: `${progress * 100}%` }" />
+    <div v-if="state === 'initializing' || state === 'aborting'" style="
         position: absolute;
         top: 50%;
         left: 50%;
@@ -386,14 +390,9 @@ function stopVDrag() {
         padding: 1rem;
         border-radius: 8px;
         box-shadow: 0 0 0.5rem var(--query-editor-bg);
-      "
-    >
+      ">
       <span>Loading schema...</span>
-      <button
-        @click="abort"
-        :disabled="state === 'aborting'"
-        class="btn btn-flat"
-      >
+      <button @click="abort" :disabled="state === 'aborting'" class="btn btn-flat">
         {{ state === "aborting" ? "Cancelling" : "Cancel" }}
       </button>
     </div>
@@ -420,9 +419,7 @@ function stopVDrag() {
     </div>
 
     <!-- horizontal scrollbar -->
-    <div
-      class="scrollbar-h"
-      style="
+    <div class="scrollbar-h" style="
         position: absolute;
         left: 4px;
         right: 12px;
@@ -430,25 +427,18 @@ function stopVDrag() {
         height: 12px;
         background-color: var(--theme-scrollbar-track);
         user-select: none;
-      "
-    >
-      <div
-        class="thumb"
-        :style="hThumbStyle"
-        @mousedown="startHDrag"
-        style="
+      " v-show="showHorizontalScrollbar">
+      <div class="thumb" :style="hThumbStyle" @mousedown="startHDrag" style="
           position: absolute;
           background-color: var(--theme-scrollbar-thumb);
           border-radius: 3px;
           cursor: pointer;
           height: 100%;
-        "
-      ></div>
+        "></div>
     </div>
 
     <!-- vertical scrollbar -->
-    <div
-      class="scrollbar-v"
+    <div class="scrollbar-v"
       style="
         position: absolute;
         top: 4px;
@@ -457,20 +447,14 @@ function stopVDrag() {
         width: 12px;
         background-color: var(--theme-scrollbar-track);
         user-select: none;
-      "
-    >
-      <div
-        class="thumb"
-        :style="vThumbStyle"
-        @mousedown="startVDrag"
-        style="
+      " v-show="showVerticalScrollbar">
+      <div class="thumb" :style="vThumbStyle" @mousedown="startVDrag" style="
           position: absolute;
           background-color: var(--theme-scrollbar-thumb);
           border-radius: 3px;
           cursor: pointer;
           width: 100%;
-        "
-      ></div>
+        "></div>
     </div>
   </div>
   <ContextMenuContainer />
