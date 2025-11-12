@@ -20,7 +20,6 @@ import {
 } from "@/composables/useSchemaDiagram";
 import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { defineComponent, type PropType } from "vue";
-import Columns from "@/components/Columns.vue";
 import { mapActions } from "pinia";
 
 type Props = NodeProps<SchemaEntityStructure>;
@@ -54,7 +53,6 @@ export default defineComponent({
 
   components: {
     Handle,
-    Columns,
   },
 
   computed: {
