@@ -1,13 +1,10 @@
 .schema-node {
   color: var(--text);
   border-radius: 6px;
-  border: 3px dashed var(--border-color);
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 0.1),
-    0 4px 6px -4px rgb(0 0 0 / 0.1);
-  // --width-offset: 1rem;
-  // width: calc(var(--min-width, auto) + var(--width-offset));
-  // height: calc(var(--min-height, auto) + var(--width-offset));
+  border: calc(2px * var(--thickness-multipler)) dashed var(--border-color);
+  // box-shadow:
+  //   0 10px 15px -3px rgb(0 0 0 / 0.1),
+  //   0 4px 6px -4px rgb(0 0 0 / 0.1);
 
   &.selected {
     outline-style: solid;

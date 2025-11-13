@@ -58,7 +58,11 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapGetters(useSchemaDiagram, ["selectedNodes", "showAllColumns"]),
+    ...mapGetters(useSchemaDiagram, [
+      "selectedNodes",
+      "selectedEntities",
+      "showAllColumns",
+    ]),
     columns() {
       return this.data.columns.sort(
         (a, b) => a.ordinalPosition - b.ordinalPosition,
@@ -82,6 +86,9 @@ export default defineComponent({
       });
     },
     highlighted() {
+      if (this.selected) {
+        return false;
+      }
       if (
         this.connectedNodes.some(
           (node) => this.selectedNodes.includes(node) && node !== this.id,
@@ -99,13 +106,17 @@ export default defineComponent({
   methods: {
     ...mapActions(useSchemaDiagram, ["toggleHideEntity"]),
     handleContextMenu(event: MouseEvent) {
-      event.preventDefault();
-      this.addSelectedNodes([this.getNode(this.id)!]);
+      // event.preventDefault();
+      if (!this.selected) {
+        this.addSelectedNodes([this.getNode(this.id)!]);
+      }
       this.$bks.openMenu(event, [
         {
-          label: `Hide ${this.data.name}`,
+          label: `Hide ${this.selectedEntities.length > 1 ? "selected entities" : this.data.name}`,
           command: () => {
-            this.toggleHideEntity(this.data, true);
+            for (const entity of this.selectedEntities) {
+              this.toggleHideEntity(entity, true);
+            }
           },
         },
       ]);

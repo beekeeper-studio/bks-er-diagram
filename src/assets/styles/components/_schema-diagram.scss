@@ -40,6 +40,11 @@
     }
   }
 
+  .vue-flow__selection {
+    border: 1px solid rgb(from var(--theme-primary) r g b / 50%);
+    background-color: rgb(from var(--theme-primary) r g b / 10%);
+  }
+
   .overlay {
     position: absolute;
     inset: 0;

@@ -1,7 +1,10 @@
 import dagre from "@dagrejs/dagre";
 import { useVueFlow, type Edge, type Node } from "@vue-flow/core";
 import { ref } from "vue";
-import type { EntityStructure } from "@/composables/useSchemaDiagram";
+import type {
+  ColumnReference,
+  TableEntityStructure,
+} from "@/composables/useSchemaDiagram";
 
 /**
  * Composable to run the layout algorithm on the graph.
@@ -14,11 +17,11 @@ export function useLayout() {
 
   const direction = ref("LR");
 
-  function layout(nodes: Node<EntityStructure>[], edges: Edge[], dir: string) {
+  function layout(nodes: Node[], edges: Edge<ColumnReference>[], dir: string) {
     // we create a new graph instance, in case some nodes/edges were removed, otherwise dagre would act as if they were still there
     const dagreGraph = new dagre.graphlib.Graph({
       compound: true,
-      directed: true,
+      // directed: true,
     });
 
     graph.value = dagreGraph;
@@ -27,12 +30,15 @@ export function useLayout() {
 
     // const isHorizontal = dir === "LR";
     dagreGraph.setGraph({
-      rankdir: "TB",
-      ranker: "longest-path",
-      align: "UR",
-      nodesep: 100,
+      rankdir: "LR",
+      ranker: "network-simplex",
       acyclicer: "greedy",
-      edgesep: 100,
+      // align: "UR",
+      nodesep: 80,
+      ranksep: 40,
+      edgesep: 10,
+      marginx: 40,
+      marginy: 40,
     });
 
     direction.value = dir;
@@ -46,29 +52,36 @@ export function useLayout() {
         height: graphNode.dimensions.height,
       });
 
-      if (node.parentNode) {
-        dagreGraph.setParent(node.id, node.parentNode);
-      }
+      // if (node.parentNode) {
+      //   dagreGraph.setParent(node.id, node.parentNode);
+      // }
     }
 
     for (const edge of edges) {
-      dagreGraph.setEdge(edge.source, edge.target);
+      const sourceSchema = edge.data?.from.entity.schema || "";
+      const targetSchema = edge.data?.to.entity.schema || "";
+      const isWithinSchemaRelation = sourceSchema === targetSchema;
+
+      dagreGraph.setEdge(edge.source, edge.target, {
+        // higher = straighter + shorter
+        weight: isWithinSchemaRelation ? 10 : 1,
+        minlen: 1,
+      });
     }
 
     dagre.layout(dagreGraph);
 
     // set nodes with updated positions
-    return nodes.map((node) => {
+    return (node: Node): Node => {
       const nodeWithPosition = dagreGraph.node(node.id);
-      console.log(node.id, {x: nodeWithPosition.x, y: nodeWithPosition.y});
-
       return {
         ...node,
+        ...dagreGraph.node(node.id),
         // targetPosition: isHorizontal ? Position.Left : Position.Top,
         // sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
         position: { x: nodeWithPosition.x, y: nodeWithPosition.y },
       };
-    });
+    };
   }
 
   return { graph, layout, previousDirection: direction };

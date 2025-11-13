@@ -6,8 +6,10 @@ import {
   type GraphNode,
 } from "@vue-flow/core";
 import { defineStore } from "pinia";
-import { computed, ref, shallowRef, watch } from "vue";
+import { computed, nextTick, ref, shallowRef, watch, type Ref } from "vue";
 import { useLayout } from "./useLayout";
+import _ from "lodash";
+import mitt from "mitt";
 
 export type TableEntity = {
   name: string;
@@ -91,6 +93,9 @@ function generateNodes(entities: EntityStructure[]): Node<NodeData>[] {
       type: entity.type,
       data: entity,
       position: { x: 0, y: 0 },
+      // Schema is hidden by default
+      // hidden: entity.type === "schema" ? true : false,
+      expandParent: true,
       parentNode:
         entity.type === "table" && entity.schema
           ? getNodeId("schema", { name: entity.schema })
@@ -124,7 +129,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     $reset: $resetVueFlow,
     addNodes,
     setNodes,
-    nodes,
+    nodes: untypedNodes,
     addEdges,
     edges,
     fitView,
@@ -137,7 +142,15 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     getSelectedNodes,
   } = useVueFlow();
 
-  const { layout: layoutLayout } = useLayout();
+  const emitter = mitt<{
+    "force-recalculate": void;
+    "node-updated-hidden": GraphNode<EntityStructure>;
+  }>();
+
+  // Obtain the ts type
+  const nodes: Ref<GraphNode<EntityStructure>[]> = untypedNodes;
+
+  const { layout: layoutGenerator } = useLayout();
 
   /**
    * Since we do some calculations when updating the entities, it is
@@ -147,49 +160,6 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
   const showAllColumns = shallowRef(
     localStorage.getItem("show-all-columns") === "true",
   );
-
-  watch(showAllColumns, () => {
-    localStorage.setItem("show-all-columns", showAllColumns.value.toString());
-  });
-
-  /**
-   * Add entities to the diagram. Use `await` or `.then()` to wait for the
-   * nodes to be added.
-   **/
-  async function addEntities(entities: EntityStructure | EntityStructure[]) {
-    if (!Array.isArray(entities)) {
-      entities = [entities];
-    }
-    entitiesRef.value.push(...entities);
-    const nodes = generateNodes(entities);
-    addNodes(nodes);
-  }
-
-  async function addKeys(references: ColumnReference | ColumnReference[]) {
-    if (!Array.isArray(references)) {
-      references = [references];
-    }
-    addEdges(generateEdges(references));
-  }
-
-  function $reset() {
-    entitiesRef.value = [];
-    $resetVueFlow();
-  }
-
-  const zoomLevel = computed<string>(
-    () => Math.round(viewport.value.zoom * 100) + "%",
-  );
-
-  const zoomValue = computed(() => viewport.value.zoom);
-
-  function zoomTo(zoom: number) {
-    vueFlowZoomTo(zoom / 100);
-  }
-
-  function layout() {
-    setNodes(layoutLayout(nodes.value, edges.value, "LR"));
-  }
 
   const selectedNodes = computed<string[]>(() =>
     getSelectedNodes.value.map((node) => node.id),
@@ -201,7 +171,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   /**
    * You can make things thicker when user zooms out with this multipler. To
-   * use, multiply the desired thickness with this multiplier.
+   * use it, multiply the desired thickness with this multiplier.
    *
    * @example
    *
@@ -237,21 +207,109 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     return ret;
   });
 
+  const zoomLevel = computed<string>(
+    () => Math.round(viewport.value.zoom * 100) + "%",
+  );
+
+  const zoomValue = computed(() => viewport.value.zoom);
+
+  /**
+   * Add entities to the diagram. Use `await` or `.then()` to wait for the
+   * nodes to be added.
+   **/
+  async function addEntities(entities: EntityStructure | EntityStructure[]) {
+    if (!Array.isArray(entities)) {
+      entities = [entities];
+    }
+    entitiesRef.value.push(...entities);
+    const nodes = generateNodes(entities);
+    addNodes(nodes);
+  }
+
+  async function addKeys(references: ColumnReference | ColumnReference[]) {
+    if (!Array.isArray(references)) {
+      references = [references];
+    }
+    addEdges(generateEdges(references));
+  }
+
+  function zoomTo(zoom: number) {
+    vueFlowZoomTo(zoom / 100);
+  }
+
+  function layout() {
+    const groupedEntities = _.groupBy(
+      nodes.value.filter(
+        (node): node is GraphNode<TableEntityStructure> =>
+          node.data.type === "table",
+      ),
+      (node) => node.data.schema || "default",
+    );
+    const nodeMap = new Map<string, Node<TableEntityStructure>>();
+    for (const [schema, nodes] of Object.entries(groupedEntities)) {
+      const getPositionedNode = layoutGenerator(nodes, edges.value, "LR");
+      for (const node of nodes) {
+        nodeMap.set(node.id, getPositionedNode(node));
+      }
+    }
+    setNodes((nodes) => {
+      return nodes.map((node) => {
+        if (nodeMap.has(node.id)) {
+          return nodeMap.get(node.id)!;
+        }
+        return node;
+      });
+    });
+  }
+
+  async function layoutSchema() {
+    emitter.emit("force-recalculate");
+    setNodes((nodes) => {
+      let offset = 0;
+      return nodes.map((node) => {
+        if (node.data.type === "schema") {
+          node.position = {
+            x: offset,
+            y: 0,
+          };
+          offset += node.dimensions.width + 100;
+        }
+        return node;
+      });
+    });
+  }
+
   function toggleHideEntity(entity: Entity, hide?: boolean) {
     const node = nodes.value.find(
       (n) => n.id === getNodeId(entity.type, entity),
     );
     if (node) {
+      let affectedNode: GraphNode<EntityStructure> | undefined;
       setNodes((nodes) => {
         return nodes.map((n) => {
           if (n.id === node.id) {
-            n.hidden = typeof hide === "boolean" ? hide : !n.hidden;
+            const shouldHide = typeof hide === "boolean" ? hide : !n.hidden;
+            n.hidden = shouldHide;
+            n.selected = false;
+            affectedNode = n;
           }
           return n;
         });
       });
+      if (affectedNode) {
+        emitter.emit("node-updated-hidden", affectedNode);
+      }
     }
   }
+
+  function $reset() {
+    entitiesRef.value = [];
+    $resetVueFlow();
+  }
+
+  watch(showAllColumns, () => {
+    localStorage.setItem("show-all-columns", showAllColumns.value.toString());
+  });
 
   return {
     entities: entitiesRef,
@@ -267,6 +325,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomOut,
     zoomTo,
     layout,
+    layoutSchema,
     getNodes,
     selectedNodes,
     selectedEntities,
@@ -277,5 +336,6 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     setViewport,
     hiddenEntities,
     toggleHideEntity,
+    emitter,
   };
 });

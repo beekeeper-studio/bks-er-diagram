@@ -93,6 +93,9 @@ async function initialize(options?: {
     await new Promise((resolve) => setTimeout(resolve, 250));
     diagram.layout();
     await nextTick();
+    diagram.layoutSchema();
+    await nextTick();
+    diagram.fitView();
   } catch (e) {
     console.error(e);
   }
@@ -314,12 +317,12 @@ const showVerticalScrollbar = computed(() => {
   const total = scrollRangeScreenY.value;
   const visible = containerHeightScreen.value || 1;
   return total > visible;
-})
+});
 const showHorizontalScrollbar = computed(() => {
   const total = scrollRangeScreenX.value;
   const visible = containerWidthScreen.value || 1;
   return total > visible;
-})
+});
 // drag state for vertical
 const dragV = reactive({
   active: false,
@@ -438,8 +441,7 @@ function stopVDrag() {
     </div>
 
     <!-- vertical scrollbar -->
-    <div class="scrollbar-v"
-      style="
+    <div class="scrollbar-v" style="
         position: absolute;
         top: 4px;
         bottom: 12px;

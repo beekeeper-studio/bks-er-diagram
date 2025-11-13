@@ -1,7 +1,7 @@
 <template>
   <div class="schema-node" :class="{ selected }" @contextmenu="handleContextMenu" :style="{
-    // '--min-width': `${minDimensions.width}px`,
-    // '--min-height': `${minDimensions.height}px`,
+    width: `${dimensions.width}px`,
+    height: `${dimensions.height}px`,
   }">
     <div class="schema-name">
       <span class="material-symbols-outlined schema-icon"> folder </span>
@@ -16,11 +16,21 @@
 import {
   getNodeId,
   useSchemaDiagram,
+  type EntityStructure,
   type SchemaEntityStructure,
 } from "@/composables/useSchemaDiagram";
-import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
+import {
+  Handle,
+  Position,
+  useVueFlow,
+  type Node,
+  type Dimensions,
+  type GraphNode,
+  type NodeProps,
+  type NodeDragEvent,
+} from "@vue-flow/core";
 import { defineComponent, type PropType } from "vue";
-import { mapActions } from "pinia";
+import { mapActions, mapGetters } from "pinia";
 
 type Props = NodeProps<SchemaEntityStructure>;
 
@@ -55,44 +65,65 @@ export default defineComponent({
     Handle,
   },
 
+  data() {
+    return {
+      unsubscribe: undefined as Function | undefined,
+    };
+  },
+
   computed: {
+    ...mapGetters(useSchemaDiagram, ["emitter"]),
     children() {
-      return this.data.entities.map((e) =>
-        this.getNode(getNodeId("table", e)!),
-      );
+      const nodes: GraphNode<EntityStructure>[] = [];
+      for (const entity of this.data.entities) {
+        const node = this.getNode(getNodeId("table", entity)!)!;
+        if (!node.hidden) {
+          nodes.push(node);
+        }
+      }
+      return nodes;
     },
     node() {
       return this.getNode(this.id)!;
-    },
-    minDimensions() {
-      let minWidth = Infinity;
-      let maxX = 0;
-      let minHeight = Infinity;
-      let maxY = 0;
-      for (const child of this.children) {
-        if (!child) continue;
-        if (child.position.x + child.dimensions.width < minWidth)
-          minWidth = child.position.x + child.dimensions.width;
-        if (child.position.x + child.dimensions.width > maxX)
-          maxX = child.position.x + child.dimensions.width;
-        if (child.position.y + child.dimensions.height < minHeight)
-          minHeight = child.position.y + child.dimensions.height;
-        if (child.position.y + child.dimensions.height > maxY)
-          maxY = child.position.y + child.dimensions.height;
-      }
-      return {
-        width: maxX - this.position.x,
-        height: maxY - this.position.y,
-      };
     },
   },
 
   methods: {
     ...mapActions(useSchemaDiagram, ["toggleHideEntity"]),
+    calculateDimensions(): Dimensions {
+      const offset = 42;
+      let minWidth = Infinity;
+      let maxX = -Infinity;
+      let minHeight = Infinity;
+      let maxY = -Infinity;
+      for (const child of this.children) {
+        if (!child) continue;
+        if (child.computedPosition.x + child.dimensions.width < minWidth)
+          minWidth = child.computedPosition.x + child.dimensions.width;
+        if (child.computedPosition.x + child.dimensions.width > maxX)
+          maxX = child.computedPosition.x + child.dimensions.width;
+        if (child.computedPosition.y + child.dimensions.height < minHeight)
+          minHeight = child.computedPosition.y + child.dimensions.height;
+        if (child.computedPosition.y + child.dimensions.height > maxY)
+          maxY = child.computedPosition.y + child.dimensions.height;
+      }
+      return {
+        width: maxX - this.position.x + offset,
+        height: maxY - this.position.y + offset,
+      };
+    },
+    recalculate() {
+      this.applyNodeChanges([
+        {
+          id: this.id,
+          type: "dimensions",
+          dimensions: this.calculateDimensions(),
+        },
+      ]);
+    },
     handleContextMenu(event: MouseEvent) {
       return;
 
-      event.preventDefault();
       this.addSelectedNodes([this.node]);
 
       // TODO support hide schema
@@ -105,19 +136,38 @@ export default defineComponent({
         },
       ]);
     },
+    recalculateIfNodeIsChild(node: Node<EntityStructure>) {
+      if (node.parentNode === this.id) {
+        this.recalculate();
+      }
+    },
   },
 
-  async mounted() {
-    await this.$nextTick();
+  mounted() {
+    this.emitter.on("force-recalculate", this.recalculate);
+    this.emitter.on("node-updated-hidden", this.recalculateIfNodeIsChild);
+    const { off } = this.onNodeDragStop((event) =>
+      this.recalculateIfNodeIsChild(event.node),
+    );
+    this.unsubscribe = off;
+  },
+
+  beforeUnmount() {
+    this.emitter.off("force-recalculate", this.recalculate);
+    this.emitter.off("node-updated-hidden", this.recalculateIfNodeIsChild);
+    this.unsubscribe?.();
   },
 
   setup() {
-    const { addSelectedNodes, getNode, applyNodeChanges } = useVueFlow();
+    const { addSelectedNodes, getNode, applyNodeChanges, onNodeDragStop } =
+      useVueFlow();
+
     return {
       Position,
       addSelectedNodes,
       getNode,
       applyNodeChanges,
+      onNodeDragStop,
     };
   },
 });

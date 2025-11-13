@@ -2,7 +2,7 @@
   <div class="schema-diagram" :style="{
     '--thickness-multipler': diagram.thicknessMultipler,
   }">
-    <VueFlow class="diagram" :min-zoom="0.01" :nodes="diagram.nodes" :edges="diagram.edges" elevate-edges-on-select>
+    <VueFlow class="diagram" :min-zoom="0.01" :nodes="diagram.nodes" :edges="diagram.edges" elevate-edges-on-select :pan-on-drag="[1]">
       <Background variant="dots" pattern-color="var(--bg-pattern-color)" />
 
       <template #edge-floating="props">
