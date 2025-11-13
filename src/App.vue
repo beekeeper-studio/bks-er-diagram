@@ -120,24 +120,27 @@ onMounted(async () => {
     await initialize({
       streamOptions: {
         table: {
+          // @ts-expect-error
           schema: viewContext.params.entity.schema,
+          // @ts-expect-error
           name: viewContext.params.entity.name,
         },
       },
     });
+    // @ts-expect-error
     await setTabTitle(viewContext.params.entity.name);
   } else {
     const schemas = await request({ name: "getSchemas" }).then((ss) =>
       ss
-        .filter((schema) => schema !== connection.defaultSchema)
-        .filter((schema) => !isSystemSchema(databaseType, schema)),
+        .filter((schema: string) => schema !== connection.defaultSchema)
+        .filter((schema: string) => !isSystemSchema(databaseType, schema)),
     );
     await initialize({ schemas: [connection.defaultSchema, ...schemas] });
   }
 
   const el = container.value;
-  containerWidth.value = el.clientWidth;
-  containerHeight.value = el.clientHeight;
+  containerWidth.value = el!.clientWidth;
+  containerHeight.value = el!.clientHeight;
 
   /** @ts-expect-error FIXME not fully typed */
   addNotificationListener("tablesChanged", initialize);

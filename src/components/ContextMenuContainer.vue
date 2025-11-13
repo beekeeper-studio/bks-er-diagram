@@ -24,8 +24,10 @@ export default defineComponent({
   watch: {
     event() {
       if (!event) {
+        // @ts-expect-error
         this.$refs.menu.hide();
       } else {
+        // @ts-expect-error
         this.$refs.menu.show(this.event);
       }
     },

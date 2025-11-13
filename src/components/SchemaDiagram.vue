@@ -93,7 +93,7 @@ import { defineComponent, type PropType } from "vue";
 import FloatingEdge from "@/components/FloatingEdge.vue";
 import TableNode from "@/components/TableNode.vue";
 import Menu from "primevue/menu";
-import { type MenuItem } from "primevue/menuitem";
+import type { MenuItem } from "primevue/menuitem";
 import SchemaNode from "./SchemaNode.vue";
 import Tree from "primevue/tree";
 
@@ -145,10 +145,12 @@ export default defineComponent({
 
   methods: {
     getNodeId,
-    toggleMenu(event) {
+    toggleMenu(event: MouseEvent) {
+      // @ts-expect-error
       this.$refs.menu.toggle(event);
     },
-    toggleHiddenEntitiesMenu(event) {
+    toggleHiddenEntitiesMenu(event: MouseEvent) {
+      // @ts-expect-error
       this.$refs.hiddenEntitiesMenu.toggle(event);
     },
   },

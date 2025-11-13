@@ -28,7 +28,7 @@
       </marker>
       <marker v-else :id="id" class="vue-flow__arrowhead" viewBox="-10 -10 20 20" refX="0" refY="0" :markerWidth="18"
         :markerHeight="18" markerUnits="strokeWidth" orient="auto-start-reverse">
-        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :style="{ stroke, 'stroke-width': strokeWidth }" />
+        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :style="{ 'stroke-width': strokeWidth }" />
         <text v-if="debugUI" x="0" y="10" :style="{ stroke: 'rgb(from red r g b / 0.5)', fontSize: '0.5rem' }">
           {{ debugLabel }}
         </text>

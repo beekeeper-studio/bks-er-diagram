@@ -1,10 +1,7 @@
 import dagre from "@dagrejs/dagre";
 import { useVueFlow, type Edge, type Node } from "@vue-flow/core";
 import { ref } from "vue";
-import type {
-  ColumnReference,
-  TableEntityStructure,
-} from "@/composables/useSchemaDiagram";
+import type { ColumnReference } from "@/composables/useSchemaDiagram";
 
 /**
  * Composable to run the layout algorithm on the graph.

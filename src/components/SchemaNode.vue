@@ -27,7 +27,6 @@ import {
   type Dimensions,
   type GraphNode,
   type NodeProps,
-  type NodeDragEvent,
 } from "@vue-flow/core";
 import { defineComponent, type PropType } from "vue";
 import { mapActions, mapGetters } from "pinia";

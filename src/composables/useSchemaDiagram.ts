@@ -6,7 +6,7 @@ import {
   type GraphNode,
 } from "@vue-flow/core";
 import { defineStore } from "pinia";
-import { computed, nextTick, ref, shallowRef, watch, type Ref } from "vue";
+import { computed, ref, shallowRef, watch, type Ref } from "vue";
 import { useLayout } from "./useLayout";
 import _ from "lodash";
 import mitt from "mitt";
@@ -66,6 +66,7 @@ export function getNodeId(type: "table" | "schema", entity: Entity): string {
   if (type === "schema") {
     return entity.name;
   }
+  // @ts-expect-error incorrect type
   return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
@@ -89,6 +90,7 @@ export function getHandleId(column: Column): string {
 function generateNodes(entities: EntityStructure[]): Node<NodeData>[] {
   return entities.map((entity) => {
     return {
+      // @ts-expect-error
       id: getNodeId(entity.type, entity),
       type: entity.type,
       data: entity,
@@ -246,7 +248,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
       (node) => node.data.schema || "default",
     );
     const nodeMap = new Map<string, Node<TableEntityStructure>>();
-    for (const [schema, nodes] of Object.entries(groupedEntities)) {
+    for (const [, nodes] of Object.entries(groupedEntities)) {
       const getPositionedNode = layoutGenerator(nodes, edges.value, "LR");
       for (const node of nodes) {
         nodeMap.set(node.id, getPositionedNode(node));
@@ -281,6 +283,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   function toggleHideEntity(entity: Entity, hide?: boolean) {
     const node = nodes.value.find(
+      // @ts-expect-error
       (n) => n.id === getNodeId(entity.type, entity),
     );
     if (node) {

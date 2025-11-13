@@ -96,6 +96,7 @@ function getEntityStructureId(
   if (type === "schema") {
     return entity.name;
   }
+  // @ts-expect-error
   return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
@@ -282,10 +283,12 @@ export const useSchema = defineStore("schema", () => {
           name: column.name,
         }),
         hasReferences: false,
+        // @ts-expect-error not fully typed
         ordinalPosition: column.ordinalPosition,
         primaryKey: false,
         foreignKey: false,
         uniqueKey: false,
+        // @ts-expect-error not fully typed
         nullable: column.nullable ?? false,
       };
       columnStructureMap.value.set(
@@ -304,8 +307,8 @@ export const useSchema = defineStore("schema", () => {
       },
     });
     let pkCount = 0;
-    indexes.forEach((index) => {
-      index.columns.forEach((c) => {
+    indexes.forEach((index: any) => {
+      index.columns.forEach((c: any) => {
         const column = findColumnStrucuture({
           entity,
           name: c.name,
@@ -336,7 +339,7 @@ export const useSchema = defineStore("schema", () => {
     if (pks.length > 1) {
       entity.isComposite = true;
     }
-    pks.forEach((pk) => {
+    pks.forEach((pk: any) => {
       const column = findColumnStrucuture({
         entity,
         name: pk.name,
@@ -371,6 +374,7 @@ export const useSchema = defineStore("schema", () => {
         },
       };
       const thisTableColumn =
+        // @ts-expect-error
         key.direction === "incoming" ? cKey.to.name : cKey.from.name;
       const thisColumn = findColumnStrucuture({
         entity,
@@ -381,6 +385,7 @@ export const useSchema = defineStore("schema", () => {
         references.push(cKey);
       }
 
+      // @ts-expect-error
       if (key.direction === "outgoing") {
         const fromColumns = Array.isArray(key.fromColumn)
           ? key.fromColumn
