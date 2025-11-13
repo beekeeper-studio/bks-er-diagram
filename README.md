@@ -1,5 +1,7 @@
 # ER Diagram
 
+<img width="1647" height="519" alt="2025-11-13-200554_1647x519_scrot" src="https://github.com/user-attachments/assets/46e7c7ff-b7ea-417e-bea1-8cddba7921d6" />
+
 An interactive ER diagram viewer for Beekeeper Studio to visualize and explore relational database schemas.
 
 ## Development
