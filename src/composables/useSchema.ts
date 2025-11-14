@@ -1,9 +1,4 @@
-import {
-  getColumns,
-  getTableKeys,
-  getTables,
-  request,
-} from "@beekeeperstudio/plugin";
+import { getColumns, getTables, request } from "@beekeeperstudio/plugin";
 import {
   getHandleId,
   type Column,
@@ -353,8 +348,14 @@ export const useSchema = defineStore("schema", () => {
   /** Mutate `entity` structure by filling the `hasReferences` and `foreignKey` properties. */
   async function findReferencesAndUpdateEntity(entity: TableEntityStructure) {
     const references: ColumnReference[] = [];
-    const keys = await getTableKeys(entity.name, entity.schema);
-    for (const key of keys) {
+    const incomingKeys = await request({
+      name: "getIncomingKeys",
+      args: {
+        table: entity.name,
+        schema: entity.schema,
+      },
+    });
+    for (const key of incomingKeys) {
       const cKey: ColumnReference = {
         from: {
           entity: {
@@ -373,9 +374,44 @@ export const useSchema = defineStore("schema", () => {
           name: key.toColumn.toString(),
         },
       };
-      const thisTableColumn =
-        // @ts-expect-error
-        key.direction === "incoming" ? cKey.to.name : cKey.from.name;
+      const thisTableColumn = cKey.to.name;
+      const thisColumn = findColumnStrucuture({
+        entity,
+        name: thisTableColumn,
+      });
+      if (thisColumn) {
+        thisColumn.hasReferences = true;
+        references.push(cKey);
+      }
+    }
+    const outgoingKeys = await request({
+      name: "getOutgoingKeys",
+      args: {
+        table: entity.name,
+        schema: entity.schema,
+      },
+    });
+    console.log({entity, outgoingKeys, incomingKeys})
+    for (const key of outgoingKeys) {
+      const cKey: ColumnReference = {
+        from: {
+          entity: {
+            name: key.fromTable,
+            schema: key.fromSchema,
+          },
+          // FIXME composite key is untested
+          name: key.fromColumn.toString(),
+        },
+        to: {
+          entity: {
+            name: key.toTable,
+            schema: key.toSchema,
+          },
+          // FIXME composite key is untested
+          name: key.toColumn.toString(),
+        },
+      };
+      const thisTableColumn = cKey.from.name;
       const thisColumn = findColumnStrucuture({
         entity,
         name: thisTableColumn,
@@ -385,21 +421,18 @@ export const useSchema = defineStore("schema", () => {
         references.push(cKey);
       }
 
-      // @ts-expect-error
-      if (key.direction === "outgoing") {
-        const fromColumns = Array.isArray(key.fromColumn)
-          ? key.fromColumn
-          : [key.fromColumn];
-        fromColumns.forEach((column) => {
-          const columnStructure = findColumnStrucuture({
-            entity,
-            name: column,
-          });
-          if (columnStructure) {
-            columnStructure.foreignKey = true;
-          }
+      const fromColumns = Array.isArray(key.fromColumn)
+        ? key.fromColumn
+        : [key.fromColumn];
+      fromColumns.forEach((column) => {
+        const columnStructure = findColumnStrucuture({
+          entity,
+          name: column,
         });
-      }
+        if (columnStructure) {
+          columnStructure.foreignKey = true;
+        }
+      });
     }
     return references;
   }
