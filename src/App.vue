@@ -4,7 +4,6 @@ import {
   nextTick,
   onMounted,
   onUnmounted,
-  reactive,
   ref,
   useTemplateRef,
 } from "vue";
@@ -26,6 +25,7 @@ import { useDebug } from "./composables/useDebug";
 import type { MenuItem } from "primevue/menuitem";
 import ContextMenuContainer from "@/components/ContextMenuContainer.vue";
 import { isDevMode, isSupportedDatabase, isSystemSchema } from "./config";
+import DiagramScrollbar from "./components/DiagramScrollbar.vue";
 
 const diagram = useSchemaDiagram();
 const { stream, progress } = useSchema();
@@ -173,203 +173,6 @@ const menuItems = computed(
         : []),
     ] as MenuItem[],
 );
-
-/* =========================================================
-   HORIZONTAL SCROLLBAR (elastic)
-   ========================================================= */
-const worldWidthScreen = computed(
-  () => diagram.rectOfDiagram.width * diagram.viewport.zoom,
-);
-const containerWidthScreen = containerWidth;
-const rectLeftScreen = computed(
-  () => diagram.rectOfDiagram.x * diagram.viewport.zoom,
-);
-const maxScrollScreenX = computed(() =>
-  Math.max(0, worldWidthScreen.value - containerWidthScreen.value),
-);
-const baseMaxViewportX = computed(() => rectLeftScreen.value);
-const baseMinViewportX = computed(
-  () => rectLeftScreen.value - maxScrollScreenX.value,
-);
-const dynamicMaxViewportX = computed(() =>
-  Math.max(baseMaxViewportX.value, diagram.viewport.x),
-);
-const dynamicMinViewportX = computed(() =>
-  Math.min(baseMinViewportX.value, diagram.viewport.x),
-);
-const scrollRangeScreenX = computed(() => {
-  const range = dynamicMaxViewportX.value - dynamicMinViewportX.value;
-  return range <= 0 ? containerWidthScreen.value || 1 : range;
-});
-const scrolledScreenX = computed(
-  () => dynamicMaxViewportX.value - diagram.viewport.x,
-);
-const scrollFracX = computed(() => {
-  return scrolledScreenX.value / scrollRangeScreenX.value;
-});
-const hThumbStyle = computed(() => {
-  const total = scrollRangeScreenX.value;
-  const visible = containerWidthScreen.value || 1;
-  let thumbPercent = (visible / total) * 100;
-  thumbPercent = Math.max(5, Math.min(thumbPercent, 100));
-  const leftPercent = scrollFracX.value * (100 - thumbPercent);
-  return {
-    width: thumbPercent + "%",
-    left: leftPercent + "%",
-  };
-});
-const dragH = reactive({
-  active: false,
-  startX: 0,
-  startFrac: 0,
-  startMax: 0,
-  startMin: 0,
-});
-function startHDrag(e: MouseEvent) {
-  dragH.active = true;
-  dragH.startX = e.clientX;
-  dragH.startFrac = scrollFracX.value;
-  dragH.startMax = dynamicMaxViewportX.value;
-  dragH.startMin = dynamicMinViewportX.value;
-  window.addEventListener("mousemove", onHDrag);
-  window.addEventListener("mouseup", stopHDrag);
-}
-function onHDrag(e: MouseEvent) {
-  if (!dragH.active) return;
-  const trackPx = containerWidth.value;
-  if (!trackPx) return;
-  const range = dragH.startMax - dragH.startMin;
-  const effectiveRange = range <= 0 ? trackPx : range;
-
-  const ratio = Math.min(1, trackPx / effectiveRange);
-  const thumbPx = trackPx * ratio;
-  const movablePx = trackPx - thumbPx;
-  if (movablePx <= 0) return;
-
-  const dx = e.clientX - dragH.startX;
-  let nextFrac = dragH.startFrac + dx / movablePx;
-  nextFrac = Math.max(0, Math.min(1, nextFrac));
-
-  const nextScrolledScreenX = nextFrac * effectiveRange;
-  const nextViewportX = dragH.startMax - nextScrolledScreenX;
-
-  diagram.setViewport({ ...diagram.viewport, x: nextViewportX });
-  diagram.viewport.x = nextViewportX;
-}
-function stopHDrag() {
-  dragH.active = false;
-  window.removeEventListener("mousemove", onHDrag);
-  window.removeEventListener("mouseup", stopHDrag);
-}
-
-/* =========================================================
-   VERTICAL SCROLLBAR (elastic) — same idea
-   ========================================================= */
-
-// world height in SCREEN px
-const worldHeightScreen = computed(
-  () => diagram.rectOfDiagram.height * diagram.viewport.zoom,
-);
-const containerHeightScreen = containerHeight;
-// top of diagram in SCREEN px
-const rectTopScreen = computed(
-  () => diagram.rectOfDiagram.y * diagram.viewport.zoom,
-);
-// how much we can scroll normally (SCREEN px)
-const maxScrollScreenY = computed(() =>
-  Math.max(0, worldHeightScreen.value - containerHeightScreen.value),
-);
-// base range
-const baseMaxViewportY = computed(() => rectTopScreen.value); // topmost
-const baseMinViewportY = computed(
-  () => rectTopScreen.value - maxScrollScreenY.value,
-); // bottom-most (likely negative)
-// extend to include overshoot
-const dynamicMaxViewportY = computed(() =>
-  Math.max(baseMaxViewportY.value, diagram.viewport.y),
-);
-const dynamicMinViewportY = computed(() =>
-  Math.min(baseMinViewportY.value, diagram.viewport.y),
-);
-// total range
-const scrollRangeScreenY = computed(() => {
-  const range = dynamicMaxViewportY.value - dynamicMinViewportY.value;
-  return range <= 0 ? containerHeightScreen.value || 1 : range;
-});
-// how far we’ve scrolled down, in SCREEN px
-const scrolledScreenY = computed(
-  () => dynamicMaxViewportY.value - diagram.viewport.y,
-);
-// fraction
-const scrollFracY = computed(() => {
-  return scrolledScreenY.value / scrollRangeScreenY.value;
-});
-// thumb style
-const vThumbStyle = computed(() => {
-  const total = scrollRangeScreenY.value;
-  const visible = containerHeightScreen.value || 1;
-  let thumbPercent = (visible / total) * 100;
-  thumbPercent = Math.max(5, Math.min(thumbPercent, 100));
-  const topPercent = scrollFracY.value * (100 - thumbPercent);
-  return {
-    height: thumbPercent + "%",
-    top: topPercent + "%",
-  };
-});
-const showVerticalScrollbar = computed(() => {
-  const total = scrollRangeScreenY.value;
-  const visible = containerHeightScreen.value || 1;
-  return total > visible;
-});
-const showHorizontalScrollbar = computed(() => {
-  const total = scrollRangeScreenX.value;
-  const visible = containerWidthScreen.value || 1;
-  return total > visible;
-});
-// drag state for vertical
-const dragV = reactive({
-  active: false,
-  startY: 0,
-  startFrac: 0,
-  startMax: 0,
-  startMin: 0,
-});
-function startVDrag(e: MouseEvent) {
-  dragV.active = true;
-  dragV.startY = e.clientY;
-  dragV.startFrac = scrollFracY.value;
-  dragV.startMax = dynamicMaxViewportY.value;
-  dragV.startMin = dynamicMinViewportY.value;
-  window.addEventListener("mousemove", onVDrag);
-  window.addEventListener("mouseup", stopVDrag);
-}
-function onVDrag(e: MouseEvent) {
-  if (!dragV.active) return;
-  const trackPx = containerHeight.value;
-  if (!trackPx) return;
-  const range = dragV.startMax - dragV.startMin;
-  const effectiveRange = range <= 0 ? trackPx : range;
-
-  const ratio = Math.min(1, trackPx / effectiveRange);
-  const thumbPx = trackPx * ratio;
-  const movablePx = trackPx - thumbPx;
-  if (movablePx <= 0) return;
-
-  const dy = e.clientY - dragV.startY;
-  let nextFrac = dragV.startFrac + dy / movablePx;
-  nextFrac = Math.max(0, Math.min(1, nextFrac));
-
-  const nextScrolledScreenY = nextFrac * effectiveRange;
-  const nextViewportY = dragV.startMax - nextScrolledScreenY;
-
-  diagram.setViewport({ ...diagram.viewport, y: nextViewportY });
-  diagram.viewport.y = nextViewportY;
-}
-function stopVDrag() {
-  dragV.active = false;
-  window.removeEventListener("mousemove", onVDrag);
-  window.removeEventListener("mouseup", stopVDrag);
-}
 </script>
 
 <template>
@@ -424,43 +227,7 @@ function stopVDrag() {
       </section>
     </div>
 
-    <!-- horizontal scrollbar -->
-    <div class="scrollbar-h" style="
-        position: absolute;
-        left: 4px;
-        right: 12px;
-        bottom: 4px;
-        height: 12px;
-        background-color: var(--theme-scrollbar-track);
-        user-select: none;
-      " v-show="showHorizontalScrollbar">
-      <div class="thumb" :style="hThumbStyle" @mousedown="startHDrag" style="
-          position: absolute;
-          background-color: var(--theme-scrollbar-thumb);
-          border-radius: 3px;
-          cursor: pointer;
-          height: 100%;
-        "></div>
-    </div>
-
-    <!-- vertical scrollbar -->
-    <div class="scrollbar-v" style="
-        position: absolute;
-        top: 4px;
-        bottom: 12px;
-        right: 4px;
-        width: 12px;
-        background-color: var(--theme-scrollbar-track);
-        user-select: none;
-      " v-show="showVerticalScrollbar">
-      <div class="thumb" :style="vThumbStyle" @mousedown="startVDrag" style="
-          position: absolute;
-          background-color: var(--theme-scrollbar-thumb);
-          border-radius: 3px;
-          cursor: pointer;
-          width: 100%;
-        "></div>
-    </div>
+    <DiagramScrollbar :container-width="containerWidth" :container-height="containerHeight" />
   </div>
   <ContextMenuContainer />
 </template>

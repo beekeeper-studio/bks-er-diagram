@@ -391,7 +391,6 @@ export const useSchema = defineStore("schema", () => {
         schema: entity.schema,
       },
     });
-    console.log({entity, outgoingKeys, incomingKeys})
     for (const key of outgoingKeys) {
       const cKey: ColumnReference = {
         from: {

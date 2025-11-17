@@ -18,10 +18,7 @@
       </template>
 
       <Panel position="top-right" class="panel">
-        <button class="btn btn-fab btn-flat">
-          <span class="material-symbols-outlined">file_export</span>
-          <span class="title-popup">Export</span>
-        </button>
+        <slot name="panel-top-right-start"></slot>
         <button class="btn btn-fab btn-flat" @click="toggleMenu">
           <span class="material-symbols-outlined">more_vert</span>
         </button>
