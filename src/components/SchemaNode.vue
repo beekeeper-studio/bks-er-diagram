@@ -143,7 +143,7 @@ export default defineComponent({
   },
 
   mounted() {
-    this.emitter.on("force-recalculate", this.recalculate);
+    this.emitter.on("force-recalculate-schemas", this.recalculate);
     this.emitter.on("node-updated-hidden", this.recalculateIfNodeIsChild);
     const { off } = this.onNodeDragStop((event) =>
       this.recalculateIfNodeIsChild(event.node),
@@ -152,7 +152,7 @@ export default defineComponent({
   },
 
   beforeUnmount() {
-    this.emitter.off("force-recalculate", this.recalculate);
+    this.emitter.off("force-recalculate-schemas", this.recalculate);
     this.emitter.off("node-updated-hidden", this.recalculateIfNodeIsChild);
     this.unsubscribe?.();
   },

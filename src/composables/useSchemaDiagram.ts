@@ -142,10 +142,11 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomTo: vueFlowZoomTo,
     getNodes,
     getSelectedNodes,
+    viewportRef,
   } = useVueFlow();
 
   const emitter = mitt<{
-    "force-recalculate": void;
+    "force-recalculate-schemas": void;
     "node-updated-hidden": GraphNode<EntityStructure>;
   }>();
 
@@ -265,7 +266,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
   }
 
   async function layoutSchema() {
-    emitter.emit("force-recalculate");
+    emitter.emit("force-recalculate-schemas");
     setNodes((nodes) => {
       let offset = 0;
       return nodes.map((node) => {
@@ -310,8 +311,41 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     $resetVueFlow();
   }
 
-  watch(showAllColumns, () => {
+  watch(showAllColumns, async () => {
     localStorage.setItem("show-all-columns", showAllColumns.value.toString());
+    // Wait for Vue to update the DOM before measuring
+    await nextTick();
+
+    // Update node dimensions when showAllColumns changes
+    setNodes((nodes) =>
+      nodes.map((node) => {
+        if (!node.hidden && node.data.type === "table") {
+          const nodeElement = viewportRef.value?.querySelector(
+            `.vue-flow__node[data-id="${node.id}"] > div`,
+          ) as HTMLElement;
+
+          if (nodeElement) {
+            // Measure the new size from DOM
+            const width = nodeElement.offsetWidth;
+            const height = nodeElement.offsetHeight;
+
+            // Update both node.width/height (for inline styles) and node.dimensions (for calculations)
+            return {
+              ...node,
+              width,
+              height,
+              dimensions: {
+                width,
+                height,
+              },
+            };
+          }
+        }
+        return node;
+      }),
+    );
+
+    emitter.emit("force-recalculate-schemas");
   });
 
   return {
