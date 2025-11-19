@@ -1,10 +1,14 @@
 .schema-node {
+  position: relative;
   color: var(--text);
-  border-radius: 6px;
-  border: calc(2px * var(--thickness-multipler)) dashed var(--border-color);
-  // box-shadow:
-  //   0 10px 15px -3px rgb(0 0 0 / 0.1),
-  //   0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 1.25rem 0 0;
+    border-radius: 6px;
+    border: calc(2px * var(--thickness-multipler)) dashed var(--border-color);
+  }
 
   &.selected {
     outline-style: solid;
@@ -24,21 +28,28 @@
   }
 
   .schema-name {
-    height: 2.5rem;
+    position: absolute;
+    left: 0;
+    top: calc(-0.8rem * var(--thickness-multipler));
+    font-size: calc(0.8rem * var(--thickness-multipler));
     width: 100%;
     display: flex;
     align-items: center;
     font-weight: bold;
     text-align: center;
     display: flex;
-    padding-left: 0.75rem;
     margin-right: 0.75rem;
+
+    >:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .schema-icon {
     font-size: 1.25em;
     margin-right: 0.5rem;
     color: color-mix(in srgb, var(--theme-base) 40%, var(--theme-bg));
-    font-variation-settings: "FILL" 1;
   }
 }

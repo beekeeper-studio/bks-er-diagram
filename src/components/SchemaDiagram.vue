@@ -1,8 +1,9 @@
 <template>
   <div class="schema-diagram" :style="{
-    '--thickness-multipler': diagram.thicknessMultipler,
+    '--thickness-multipler': generatingImage ? 1 : diagram.thicknessMultipler,
   }">
-    <VueFlow class="diagram" :min-zoom="0.01" :nodes="diagram.nodes" :edges="diagram.edges" elevate-edges-on-select :pan-on-drag="[1]">
+    <VueFlow class="diagram" :min-zoom="0.01" :nodes="diagram.nodes" :edges="diagram.edges" elevate-edges-on-select
+      :pan-on-drag="[1]">
       <Background variant="dots" pattern-color="var(--bg-pattern-color)" />
 
       <template #edge-floating="props">
@@ -75,8 +76,6 @@
           <span class="title-popup">Help</span>
         </button>
       </Panel>
-
-      <div class="overlay" v-if="disabled" />
     </VueFlow>
   </div>
 </template>
@@ -93,6 +92,7 @@ import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
 import SchemaNode from "./SchemaNode.vue";
 import Tree from "primevue/tree";
+import { mapGetters } from "pinia";
 
 export default defineComponent({
   components: {
@@ -108,7 +108,6 @@ export default defineComponent({
   },
 
   props: {
-    disabled: Boolean,
     menuItems: {
       type: Array as PropType<MenuItem[]>,
       default: () => [],
@@ -123,6 +122,7 @@ export default defineComponent({
   },
 
   computed: {
+    ...mapGetters(useSchemaDiagram, ["generatingImage"]),
     hiddenEntitiesAsMenuItems(): MenuItem[] {
       return this.diagram.hiddenEntities.map((entity) => ({
         label:

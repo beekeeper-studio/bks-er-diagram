@@ -4,7 +4,8 @@
     height: `${dimensions.height}px`,
   }">
     <div class="schema-name">
-      <span class="material-symbols-outlined schema-icon"> folder </span>
+      <span class="material-symbols-outlined schema-icon"
+        style="font-variation-settings: &quot;FILL&quot; 1">folder</span>
       <span>
         {{ data.name }}
       </span>

@@ -1,9 +1,11 @@
 <template>
-  <path :id="id" class="vue-flow__edge-path edge-path" :class="{ highlighted }" :d="d"
-    :marker-start="`url(#${markerStartId})`" :marker-end="`url(#${markerEndId})`" :style="style" />
+  <path :id="id" class="edge-path" :class="{ highlighted }" :d="d" :marker-start="`url(#${markerStartId})`"
+    :marker-end="`url(#${markerEndId})`" fill="none" stroke-width="2" :stroke="stroke" />
   <path fill="none" class="vue-flow__edge-interaction" :d="d" stroke-opacity="0" stroke-width="30" />
-  <CrowsFootMarker :id="markerStartId" :highlighted="highlighted" :type="markerStartType" debug-label="F" />
-  <CrowsFootMarker :id="markerEndId" :highlighted="highlighted" :type="markerEndType" debug-label="T" />
+  <CrowsFootMarker :id="markerStartId" :highlighted="highlighted" :type="markerStartType" :stroke="stroke"
+    debug-label="F" />
+  <CrowsFootMarker :id="markerEndId" :highlighted="highlighted" :type="markerEndType" :stroke="stroke"
+    debug-label="T" />
 </template>
 
 <script lang="ts">
@@ -27,6 +29,8 @@ export default defineComponent({
   inheritAttrs: false,
 
   components: { CrowsFootMarker },
+
+  inject: ["calculatedTheme"],
 
   props: {
     id: {
@@ -58,6 +62,18 @@ export default defineComponent({
   },
 
   computed: {
+    // To make html-to-image work, many of these svg's props are not styled
+    // from css directly
+    stroke() {
+      if (this.selected) {
+        return this.calculatedTheme.selectedEdgeStroke;
+      }
+      if (this.highlighted) {
+        return this.calculatedTheme.highlightedEdgeStroke;
+      }
+      return this.calculatedTheme.edgeStroke;
+    },
+
     edgeParams() {
       const params = getEdgeParams(this.sourceNode, this.targetNode, this.data);
 

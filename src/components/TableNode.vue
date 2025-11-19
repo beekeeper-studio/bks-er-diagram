@@ -26,7 +26,7 @@ import {
   type ColumnStructure,
   type TableEntityStructure,
 } from "@/composables/useSchemaDiagram";
-import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
+import { Handle, Position, useNode, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { mapActions, mapGetters } from "pinia";
 import { defineComponent, type PropType } from "vue";
 import Columns from "@/components/Columns.vue";
@@ -108,7 +108,7 @@ export default defineComponent({
     handleContextMenu(event: MouseEvent) {
       // event.preventDefault();
       if (!this.selected) {
-        this.addSelectedNodes([this.getNode(this.id)!]);
+        this.addSelectedNodes([this.node]);
       }
       this.$bks.openMenu(event, [
         {
@@ -127,12 +127,13 @@ export default defineComponent({
   },
 
   setup() {
-    const { getConnectedEdges, addSelectedNodes, getNode } = useVueFlow();
+    const { getConnectedEdges, addSelectedNodes } = useVueFlow();
+    const { node } = useNode<TableEntityStructure>();
     return {
       Position,
       getConnectedEdges,
       addSelectedNodes,
-      getNode,
+      node,
     };
   },
 });

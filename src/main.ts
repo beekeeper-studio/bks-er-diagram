@@ -3,10 +3,7 @@ import { createApp } from "vue";
 import "@/assets/styles/main.scss";
 import App from "./App.vue";
 import {
-  addNotificationListener,
-  getAppInfo,
   openExternal,
-  type AppTheme,
 } from "@beekeeperstudio/plugin";
 import { VueKeyboardTrapDirectivePlugin } from "@pdanpdan/vue-keyboard-trap";
 import pluralize from "pluralize";
@@ -14,17 +11,7 @@ import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
 import { useContextMenu } from "./composables/useContextMenu";
 import type { MenuItem } from "primevue/menuitem";
-
-function applyTheme(theme: AppTheme) {
-  document.querySelector("#app-theme")!.textContent =
-    `:root { ${theme.cssString} }`;
-}
-
-// Initialize theme
-getAppInfo().then((app) => applyTheme(app.theme));
-
-// Sync with app theme
-addNotificationListener("themeChanged", (theme) => applyTheme(theme));
+import Theme from "@/plugins/Theme";
 
 if (import.meta.env.DEV) {
   document.addEventListener("keydown", (e) => {
@@ -50,6 +37,7 @@ app.use({
     };
   },
 });
+app.use(Theme);
 app.config.globalProperties.$pluralize = pluralize;
 app.config.globalProperties.$openExternal = openExternal;
 app.mount("#app");

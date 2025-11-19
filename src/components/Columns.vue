@@ -6,9 +6,8 @@
     }">
       <div class="column-content">
         <span class="column-icon-container">
-          <span v-if="column.primaryKey || column.foreignKey" class="material-symbols-outlined key-icon">
-            vpn_key
-          </span>
+          <span v-if="column.primaryKey || column.foreignKey" class="material-symbols-outlined key-icon"
+            style="font-variation-settings: &quot;FILL&quot; 1">vpn_key</span>
         </span>
         <span class="column-name">
           {{ column.name }}

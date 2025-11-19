@@ -5,6 +5,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  shallowRef,
   useTemplateRef,
 } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
@@ -19,6 +20,7 @@ import {
   removeNotificationListener,
   request,
   setTabTitle,
+  type PluginViewContext,
 } from "@beekeeperstudio/plugin";
 import { useSchema, type SchemaStreamOptions } from "./composables/useSchema";
 import { useDebug } from "./composables/useDebug";
@@ -26,13 +28,27 @@ import type { MenuItem } from "primevue/menuitem";
 import ContextMenuContainer from "@/components/ContextMenuContainer.vue";
 import { isDevMode, isSupportedDatabase, isSystemSchema } from "./config";
 import DiagramScrollbar from "./components/DiagramScrollbar.vue";
+import Dialog from "primevue/dialog";
+import ExportDialog from "@/components/ExportDialog.vue";
 
 const diagram = useSchemaDiagram();
-const { stream, progress } = useSchema();
+const schemaStore = useSchema();
 const state = ref<"uninitialized" | "initializing" | "aborting" | "ready">(
   "uninitialized",
 );
+const exportDialogVisible = shallowRef(false);
 const debug = useDebug();
+const totalSchema = shallowRef(1);
+const loadingSchemaIndex = shallowRef(0);
+const progress = computed(
+  () =>
+    loadingSchemaIndex.value / totalSchema.value +
+    (1 / totalSchema.value) * schemaStore.progress,
+);
+
+let viewContext: PluginViewContext;
+// FIXME add a new type from @beekeeperstudio/plugin
+let connection: Awaited<ReturnType<typeof getConnectionInfo>>;
 
 let abortController: AbortController | undefined;
 
@@ -40,11 +56,11 @@ function abort() {
   state.value = "aborting";
   abortController?.abort();
 }
-
 async function initialize(options?: {
   schemas?: string[];
   streamOptions?: SchemaStreamOptions;
 }) {
+  const schemas = viewContext.params;
   if (state.value !== "uninitialized" && state.value !== "ready") {
     console.warn(
       "can only initialize when the state is `ready` or `uninitialized`.",
@@ -68,20 +84,24 @@ async function initialize(options?: {
     }
 
     if (options?.schemas) {
-      for (const schema of options.schemas) {
+      totalSchema.value = options.schemas.length;
+      for (let i = 0; i < options.schemas.length; i++) {
+        loadingSchemaIndex.value = i;
         await processStream(
-          stream({
+          schemaStore.stream({
             signal: abortController.signal,
             schema: {
-              name: schema,
+              name: options.schemas[i]!,
             },
             ...options.streamOptions,
           }),
         );
       }
     } else {
+      totalSchema.value = 1;
+      loadingSchemaIndex.value = 0;
       await processStream(
-        stream({
+        schemaStore.stream({
           signal: abortController.signal,
           ...options?.streamOptions,
         }),
@@ -93,8 +113,7 @@ async function initialize(options?: {
     await new Promise((resolve) => setTimeout(resolve, 250));
     diagram.layout();
     await nextTick();
-    diagram.layoutSchema();
-    await nextTick();
+    await diagram.layoutSchema();
     diagram.fitView();
   } catch (e) {
     console.error(e);
@@ -107,11 +126,8 @@ const container = useTemplateRef<HTMLElement>("container");
 const containerWidth = ref(0);
 const containerHeight = ref(0);
 
-onMounted(async () => {
-  const connection = await getConnectionInfo();
-  const viewContext = await getViewContext();
+async function initializeByViewContext() {
   const databaseType = connection.databaseType;
-
   if (!isSupportedDatabase(databaseType)) {
     return;
   }
@@ -129,39 +145,62 @@ onMounted(async () => {
     });
     // @ts-expect-error
     await setTabTitle(viewContext.params.entity.name);
-  } else {
-    const schemas = await request({ name: "getSchemas" }).then((ss) =>
-      ss
-        .filter((schema: string) => schema !== connection.defaultSchema)
-        .filter((schema: string) => !isSystemSchema(databaseType, schema)),
-    );
-    await initialize({ schemas: [connection.defaultSchema, ...schemas] });
+    return;
   }
+
+  const schemas = await request({ name: "getSchemas" }).then((ss) =>
+    ss
+      .filter((schema: string) => schema !== connection.defaultSchema)
+      .filter((schema: string) => !isSystemSchema(databaseType, schema)),
+  );
+  await initialize({ schemas: [connection.defaultSchema, ...schemas] });
+}
+
+onMounted(async () => {
+  viewContext = await getViewContext();
+  connection = await getConnectionInfo();
+
+  await initializeByViewContext();
 
   const el = container.value;
   containerWidth.value = el!.clientWidth;
   containerHeight.value = el!.clientHeight;
 
   /** @ts-expect-error FIXME not fully typed */
-  addNotificationListener("tablesChanged", initialize);
+  addNotificationListener("tablesChanged", initializeByViewContext);
 });
 
 onUnmounted(() => {
-  removeNotificationListener("tablesChanged", initialize);
+  removeNotificationListener("tablesChanged", initializeByViewContext);
 });
 
 const menuItems = computed(
   () =>
     [
       {
+        label: "Reload",
+        icon: "refresh",
+        command() {
+          initializeByViewContext();
+        },
+      },
+      {
+        label: "Export as Image",
+        icon: "download",
+        command() {
+          exportDialogVisible.value = true;
+        },
+      },
+      {
         label: "Show all columns",
+        icon: diagram.showAllColumns ? "check" : "",
         command() {
           diagram.showAllColumns = !diagram.showAllColumns;
         },
-        icon: diagram.showAllColumns ? "check" : "",
       },
       ...(isDevMode
-        ? [
+        ? ([
+          { separator: true },
           {
             label: "[DEV] Toggle Debug UI",
             command() {
@@ -169,7 +208,7 @@ const menuItems = computed(
             },
             icon: debug.isDebuggingUI ? "check" : "",
           },
-        ]
+        ] as MenuItem[])
         : []),
     ] as MenuItem[],
 );
@@ -177,34 +216,20 @@ const menuItems = computed(
 
 <template>
   <div class="schema-diagram-container" ref="container">
-    <SchemaDiagram :disabled="state === 'initializing' || state === 'aborting'" :menu-items="menuItems" />
+    <SchemaDiagram :menu-items="menuItems" ref="schemaDiagram" />
 
-    <div v-if="state === 'initializing' || state === 'aborting'" class="loading-progress"
-      :style="{ width: `${progress * 100}%` }" />
-    <div v-if="state === 'initializing' || state === 'aborting'" style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translateX(-50%) translateY(-50%);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem;
-        background-color: color-mix(
-          in srgb,
-          var(--theme-base) 10%,
-          var(--query-editor-bg)
-        );
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 0 0.5rem var(--query-editor-bg);
-      ">
-      <span>Loading schema...</span>
-      <button @click="abort" :disabled="state === 'aborting'" class="btn btn-flat">
-        {{ state === "aborting" ? "Cancelling" : "Cancel" }}
-      </button>
-    </div>
+    <div class="diagram-blur-overlay" v-if="state === 'initializing' || state === 'aborting'" />
+
+    <ExportDialog v-model:visible="exportDialogVisible" />
+
+    <Dialog :visible="state === 'initializing' || state === 'aborting'" :closable="false" header="Loading schema...">
+      <div class="loading-progress" :style="{ '--width': `${progress * 100}%` }" />
+      <template #footer>
+        <button @click="abort" :disabled="state === 'aborting'" class="btn">
+          {{ state === "aborting" ? "Cancelling" : "Cancel" }}
+        </button>
+      </template>
+    </Dialog>
 
     <div class="debug-panel" v-if="debug.isDebuggingUI">
       <h2>Debug Panel</h2>

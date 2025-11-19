@@ -1,34 +1,32 @@
 <template>
-  <svg class="vue-flow__marker vue-flow__container" :class="{ highlighted }">
+  <svg class="vue-flow__container">
     <defs>
       <marker v-if="type === 'one-or-many'" :id="id" class="vue-flow__arrowhead" viewBox="-10 -10 20 20" refX="0"
-        refY="0" :markerWidth="18" :markerHeight="18" markerUnits="strokeWidth" orient="auto-start-reverse">
+        refY="0" :markerWidth="18" :markerHeight="18" markerUnits="strokeWidth" orient="auto-start-reverse" :stroke="stroke">
         <!-- <ellipse cx="-5" cy="0" fill="none" rx="4" ry="4" :style="{ -->
         <!--   stroke, -->
         <!--   'stroke-width': strokeWidth, -->
         <!-- }"></ellipse> -->
-        <polyline stroke-linecap="round" fill="none" points="8,-4 0,0 8,4" :style="{
-          'stroke-width': strokeWidth,
-        }"></polyline>
-        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :style="{
-          'stroke-width': strokeWidth,
-        }" />
-        <line x1="0" y1="4" x2="0" y2="-4" stroke-linecap="round" :style="{ 'stroke-width': strokeWidth }" />
+        <polyline stroke-linecap="round" fill="none" points="8,-4 0,0 8,4" :stroke-width="strokeWidth"></polyline>
+        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :stroke-width="strokeWidth"></line>
+        <line x1="0" y1="4" x2="0" y2="-4" stroke-linecap="round" :stroke-width="strokeWidth" />
         <text v-if="debugUI" x="0" y="10" :style="{ stroke: 'rgb(from red r g b / 0.5)', fontSize: '0.5rem' }">
           {{ debugLabel }}
         </text>
       </marker>
+
       <marker v-else-if="type === 'one'" :id="id" class="vue-flow__arrowhead" viewBox="-10 -10 20 20" refX="0" refY="0"
-        :markerWidth="18" :markerHeight="18" markerUnits="strokeWidth" orient="auto-start-reverse">
-        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :style="{ 'stroke-width': strokeWidth }" />
-        <line x1="4" y1="4" x2="4" y2="-4" stroke-linecap="round" :style="{ 'stroke-width': strokeWidth }" />
+        :markerWidth="18" :markerHeight="18" markerUnits="strokeWidth" orient="auto-start-reverse" :stroke="stroke" >
+        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :stroke-width="strokeWidth" />
+        <line x1="4" y1="4" x2="4" y2="-4" stroke-linecap="round" :stroke-width="strokeWidth" />
         <text v-if="debugUI" x="0" y="10" :style="{ stroke: 'rgb(from red r g b / 0.5)', fontSize: '0.5rem' }">
           {{ debugLabel }}
         </text>
       </marker>
+
       <marker v-else :id="id" class="vue-flow__arrowhead" viewBox="-10 -10 20 20" refX="0" refY="0" :markerWidth="18"
-        :markerHeight="18" markerUnits="strokeWidth" orient="auto-start-reverse">
-        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :style="{ 'stroke-width': strokeWidth }" />
+        :markerHeight="18" markerUnits="strokeWidth" orient="auto-start-reverse" :stroke="stroke">
+        <line x1="0" y1="0" x2="8" y2="0" stroke-linecap="round" :stroke-width="strokeWidth" />
         <text v-if="debugUI" x="0" y="10" :style="{ stroke: 'rgb(from red r g b / 0.5)', fontSize: '0.5rem' }">
           {{ debugLabel }}
         </text>
@@ -52,13 +50,17 @@ export default defineComponent({
       type: String as PropType<"one" | "one-or-many" | "none">,
       required: true,
     },
-    debugLabel: String,
     strokeWidth: {
       type: Number,
       required: false,
       default: 1,
     },
-    highlighted: Boolean,
+    stroke: {
+      type: String,
+      required: false,
+      default: "black",
+    },
+    debugLabel: String,
   },
 
   computed: {

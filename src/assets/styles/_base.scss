@@ -26,7 +26,6 @@ textarea {
   transition: border-color 0.2s;
   background-color: var(--query-editor-bg);
   color: var(--text-dark);
-  font-family: inherit;
 
   &:focus {
     border-color: var(--theme-primary);

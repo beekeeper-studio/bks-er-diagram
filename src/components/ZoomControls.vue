@@ -1,5 +1,5 @@
 <template>
-  <div class="zoom-controls">
+  <div class="zoom-controls btn-group">
     <button class="btn btn-fab btn-flat" @click="zoomOut()">
       <span class="material-symbols-outlined">remove</span>
       <span class="title-popup">Zoom out</span>

@@ -1,0 +1,52 @@
+:root {
+  --p-dialog-background: var(--theme-bg);
+  --p-dialog-border-radius: 8px;
+  --p-dialog-shadow: 0 0 0.5rem var(--query-editor-bg);
+  --p-dialog-color: var(--text-dark);
+
+  --p-dialog-header-padding: 1.2rem 1.2rem 0.8rem;
+
+  --p-dialog-title-font-weight: 500;
+  --p-dialog-title-font-size: 1.1rem;
+
+  --p-dialog-content-padding: 0 1.2rem 1.2rem;
+
+  --p-dialog-footer-padding: 0 1.2rem 1.2rem;
+  --p-dialog-footer-gap: 0.5rem;
+}
+
+.export-diagram-dialog {
+  .p-dialog-content {
+    margin-bottom: 1rem;
+  }
+
+  .option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-top: 1rem;
+
+    .helper {
+      opacity: 0.7;
+      margin-block: 0.25rem;
+    }
+  }
+
+  .preview {
+    width: 32rem;
+    height: 20rem;
+    background-color: color-mix(in srgb, var(--theme-base) 6%, var(--theme-bg));
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  }
+}

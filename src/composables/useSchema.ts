@@ -123,6 +123,7 @@ export const useSchema = defineStore("schema", () => {
 
     options = _.merge(defaultStreamOptions, options);
 
+    progress.value = 0;
     isStreaming.value = true;
 
     try {

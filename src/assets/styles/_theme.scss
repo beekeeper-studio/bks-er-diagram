@@ -12,10 +12,13 @@
   --focus-visible-outline-color: color-mix(in srgb,
       var(--theme-base) 50%,
       var(--theme-bg));
-  --focus-visible-outline: var(--focus-visible-outline-color) auto 1px;
+  --focus-visible-outline-style: auto;
+  --focus-visible-outline-width: 2px;
   --bg-pattern-color: color-mix(in srgb,
       var(--theme-base) 30%,
       var(--theme-bg));
   --edge-stroke: color-mix(in srgb, var(--theme-base) 15%, var(--theme-bg));
   --edge-width: 2px;
+
+  --p-transition-duration: 0.15s;
 }

@@ -1,29 +1,37 @@
 :root {
   --p-menu-border-radius: 8px;
-  --p-menu-item-border-radius: 8px;
   --p-menu-color: var(--text);
   --p-menu-background: color-mix(in srgb,
       var(--theme-base) 6%,
       var(--query-editor-bg));
   --p-menu-shadow: 0 0 0.5rem var(--query-editor-bg);
+
+  --p-menu-submenu-label-font-weight: normal;
+
+  --p-menu-item-padding: 0.6rem;
+  --p-menu-item-border-radius: 8px;
   --p-menu-item-focus-background: color-mix(in srgb,
       var(--theme-base) 12%,
       var(--query-editor-bg));
   --p-menu-item-focus-color: var(--theme-base);
-  --p-menu-submenu-label-font-weight: normal;
+  --p-menu-item-gap: 0.5rem;
 
-  --p-contextmenu-border-radius: 8px;
-  --p-contextmenu-item-border-radius: 8px;
-  --p-contextmenu-color: var(--text);
-  --p-contextmenu-background: color-mix(in srgb,
-      var(--theme-base) 6%,
+  --p-menu-separator-border-color: color-mix(in srgb,
+      var(--theme-base) 10%,
       var(--query-editor-bg));
-  --p-contextmenu-shadow: 0 0 0.5rem var(--query-editor-bg);
-  --p-contextmenu-item-focus-background: color-mix(in srgb,
-      var(--theme-base) 12%,
-      var(--query-editor-bg));
-  --p-contextmenu-item-focus-color: var(--theme-base);
-  --p-contextmenu-submenu-label-font-weight: normal;
+
+  // Context menu is pretty the same
+  --p-contextmenu-border-radius: var(--p-menu-border-radius);
+  --p-contextmenu-color: var(--p-menu-color);
+  --p-contextmenu-background: var(--p-menu-background);
+  --p-contextmenu-shadow: var(--p-menu-shadow);
+
+  --p-contextmenu-submenu-label-font-weight: var(--p-menu-submenu-label-font-weight);
+
+  --p-contextmenu-item-padding: var(--p-menu-item-padding);
+  --p-contextmenu-item-border-radius: var(--p-menu-item-border-radius);
+  --p-contextmenu-item-focus-background: var(--p-menu-item-focus-background);
+  --p-contextmenu-item-focus-color: var(--p-menu-item-focus-color);
 }
 
 .p-menu,
@@ -31,49 +39,16 @@
 
   .p-menu-item,
   .p-contextmenu-item {
-    font-size: 12px;
+    font-size: 0.875rem;
 
     .menu-icon {
-      width: 2rem;
       font-size: 1.5em;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      width: 1em;
+      height: 1em;
     }
 
     a {
       font-weight: normal;
-      height: 2rem;
     }
   }
 }
-
-// .p-menu-list {
-//   // // background-color: color-mix(in srgb,
-//   // //     var(--theme-base) 6%,
-//   // //     var(--query-editor-bg));
-//   // // box-shadow: 0 0 0.5rem var(--query-editor-bg);
-//   // overflow: hidden;
-//   // display: flex;
-//   // flex-direction: column;
-//   // color: var(--text);
-//
-//   // .p-menu-item {
-//   //   height: 2rem;
-//   //   display: flex;
-//   //   align-items: center;
-//   //   padding-inline: 0.5rem;
-//   //   font-size: 0.85rem;
-//   //
-//   //   a {
-//   //     font-weight: normal;
-//   //   }
-//   //
-//   //   &:hover {
-//   //     background-color: color-mix(in srgb,
-//   //         var(--theme-base) 12%,
-//   //         var(--query-editor-bg));
-//   //     color: var(--theme-base);
-//   //   }
-//   // }
-// }

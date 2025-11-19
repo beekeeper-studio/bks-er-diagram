@@ -1,6 +1,39 @@
 $input-height: 26px;
 $btn-border-radius: 8px;
 
+// primevue
+:root {
+  --p-button-primary-focus-ring-color: var(--focus-visible-outline-color);
+  --p-button-focus-ring-style: var(--focus-visible-outline-style);
+  --p-button-focus-ring-width: var(--focus-visible-outline-width);
+  --p-button-focus-ring-offset: 2px;
+
+  --p-selectbutton-border-radius: 8px;
+
+  --p-togglebutton-color: color-mix(in srgb, var(--theme-base) 60%, var(--theme-bg));
+  --p-togglebutton-background: color-mix(in srgb, var(--theme-base) 6%, var(--theme-bg));
+  --p-togglebutton-padding: 0.25rem 0.25rem;
+  --p-togglebutton-font-weight: 700;
+  --p-togglebutton-border-radius: 8px;
+  --p-togglebutton-focus-ring-color: var(--focus-visible-outline-color);
+  --p-togglebutton-focus-ring-style: var(--focus-visible-outline-style);
+  --p-togglebutton-focus-ring-width: var(--focus-visible-outline-width);
+  --p-togglebutton-focus-ring-offset: var(--p-button-focus-ring-offset);
+  --p-togglebutton-transition-duration: var(--p-transition-duration);
+
+  --p-togglebutton-hover-background: var(--p-togglebutton-background);
+  --p-togglebutton-hover-color: var(--theme-base);
+  --p-togglebutton-checked-color: var(--theme-base);
+  --p-togglebutton-checked-background: var(--p-togglebutton-background);
+
+  --p-togglebutton-content-padding: 0.1rem 0.75rem;
+  --p-togglebutton-content-border-radius: 8px;
+
+  --p-togglebutton-content-checked-background: color-mix(in srgb,
+      var(--theme-base) 15%,
+      var(--theme-bg));
+}
+
 .btn {
   --btn-bg-color: rgb(from var(--theme-base) r g b / 6%);
   --btn-text-color: var(--theme-base);
@@ -20,7 +53,6 @@ $btn-border-radius: 8px;
   display: inline-flex;
   align-items: center;
   font-size: 12px;
-  font-family: inherit;
   line-height: $input-height;
   height: $input-height;
   font-weight: 700;
