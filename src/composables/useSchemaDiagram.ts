@@ -301,51 +301,43 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     const affectedNodes: GraphNode<TableEntityStructure>[] = [];
     const shouldShowSchema = new Set<string>();
 
-    for (const entity of entities) {
-      const selectedNode = nodes.value.find(
-        (n) => n.id === getNodeId("table", entity),
-      ) as GraphNode<TableEntityStructure>;
+    const selectedNodes = entities.map((e) => getNodeId("table", e));
 
-      if (!selectedNode) {
-        continue;
-      }
+    setNodes((nodes) => {
+      return nodes.map((node) => {
+        // Dont modify if it's a parent node (a.k.a schema entity).
+        if (node.isParent) {
+          return node;
+        }
 
-      setNodes((nodes) => {
-        return nodes.map((node) => {
-          // Dont modify if it's a parent node (a.k.a schema entity).
-          if (node.isParent) {
-            return node;
-          }
-
-          // Dont modify if it's not the currently selected node.
-          if (node.id !== selectedNode.id) {
-            // But if this node is not hidden, the parent should not be
-            // hidden too.
-            if (node.parentNode && !node.hidden) {
-              shouldShowSchema.add(node.parentNode);
-            }
-            return node;
-          }
-
-          // It's the currently selected node from here onwards.
-
-          const shouldHide =
-            typeof hide === "boolean" ? hide : !node.hidden;
-
-          if (node.parentNode && !shouldHide) {
+        // Dont modify if it's not the currently selected node.
+        if (!selectedNodes.includes(node.id)) {
+          // But if this node is not hidden, the parent should not be
+          // hidden too.
+          if (node.parentNode && !node.hidden) {
             shouldShowSchema.add(node.parentNode);
           }
+          return node;
+        }
 
-          affectedNodes.push(node);
+        // It's the currently selected node from here onwards.
 
-          return {
-            ...node,
-            hidden: shouldHide,
-            selected: false,
-          };
-        });
+        const shouldHide =
+          typeof hide === "boolean" ? hide : !node.hidden;
+
+        if (node.parentNode && !shouldHide) {
+          shouldShowSchema.add(node.parentNode);
+        }
+
+        affectedNodes.push(node);
+
+        return {
+          ...node,
+          hidden: shouldHide,
+          selected: false,
+        };
       });
-    }
+    });
 
     // Loop again for hiding/showing schemas if needed
     setNodes((nodes) => {

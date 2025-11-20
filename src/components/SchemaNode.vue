@@ -1,8 +1,5 @@
 <template>
-  <div class="schema-node" :class="{ selected }" @contextmenu="handleContextMenu" :style="{
-    width: `${dimensions.width}px`,
-    height: `${dimensions.height}px`,
-  }">
+  <div class="schema-node" :class="{ selected }" @contextmenu="handleContextMenu">
     <div class="schema-name">
       <span class="material-symbols-outlined schema-icon"
         style="font-variation-settings: &quot;FILL&quot; 1">folder</span>
@@ -114,9 +111,14 @@ export default defineComponent({
       this.setNodes((nodes) => {
         return nodes.map((node) => {
           if (node.id === this.id) {
+            const dimensions = this.calculateDimensions();
             return {
               ...node,
-              dimensions: this.calculateDimensions(),
+              style: {
+                width: `${dimensions.width}px`,
+                height: `${dimensions.height}px`,
+              },
+              dimensions,
             }
           }
           return node;
