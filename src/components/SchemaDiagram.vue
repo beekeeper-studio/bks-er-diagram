@@ -3,7 +3,7 @@
     '--thickness-multipler': generatingImage ? 1 : diagram.thicknessMultipler,
   }">
     <VueFlow class="diagram" :min-zoom="0.01" :nodes="diagram.nodes" :edges="diagram.edges" elevate-edges-on-select
-      :pan-on-drag="[1]">
+      pan-on-scroll selection-on-drag :pan-on-drag="[1, 2]" zoom-on-pinch>
       <Background variant="dots" pattern-color="var(--bg-pattern-color)" />
 
       <template #edge-floating="props">
