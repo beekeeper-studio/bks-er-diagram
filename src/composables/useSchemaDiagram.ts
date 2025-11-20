@@ -416,7 +416,22 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     // Wait for Vue to update the DOM before measuring
     await nextTick();
 
-    // Update node dimensions when showAllColumns changes
+    // First, reset the sizes in the DOM
+    setNodes((nodes) =>
+      nodes.map((node) => {
+        if (!node.hidden && node.data.type === "table") {
+          return {
+            ...node,
+            style: { width: 'auto', height: 'auto' },
+          };
+        }
+        return node;
+      }),
+    );
+
+    await nextTick();
+
+    // Second, get the actual sizes from the DOM and persist
     setNodes((nodes) =>
       nodes.map((node) => {
         if (!node.hidden && node.data.type === "table") {
@@ -429,22 +444,19 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
             const width = nodeElement.offsetWidth;
             const height = nodeElement.offsetHeight;
 
-            // Update both node.width/height (for inline styles) and node.dimensions (for calculations)
             return {
               ...node,
-              width,
-              height,
-              dimensions: {
-                width,
-                height,
+              style: {
+                width: `${width}px`,
+                height: `${height}px`,
               },
+              dimensions: { width, height },
             };
           }
         }
         return node;
       }),
     );
-
     emitter.emit("force-recalculate-schemas");
   });
 
