@@ -9,17 +9,13 @@
   --p-dialog-title-font-weight: 500;
   --p-dialog-title-font-size: 1.1rem;
 
-  --p-dialog-content-padding: 0 1.2rem 1.2rem;
+  --p-dialog-content-padding: 0 1.2rem 1.75rem;
 
   --p-dialog-footer-padding: 0 1.2rem 1.2rem;
   --p-dialog-footer-gap: 0.5rem;
 }
 
 .export-diagram-dialog {
-  .p-dialog-content {
-    margin-bottom: 1rem;
-  }
-
   .option-group {
     display: flex;
     flex-direction: column;

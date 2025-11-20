@@ -30,6 +30,7 @@ import { isDevMode, isSupportedDatabase, isSystemSchema } from "./config";
 import DiagramScrollbar from "./components/DiagramScrollbar.vue";
 import Dialog from "primevue/dialog";
 import ExportDialog from "@/components/ExportDialog.vue";
+import AboutDialog from "@/components/AboutDialog.vue";
 
 const diagram = useSchemaDiagram();
 const schemaStore = useSchema();
@@ -37,6 +38,7 @@ const state = ref<"uninitialized" | "initializing" | "aborting" | "ready">(
   "uninitialized",
 );
 const exportDialogVisible = shallowRef(false);
+const aboutDialogVisible = shallowRef(false);
 const debug = useDebug();
 const totalSchema = shallowRef(1);
 const loadingSchemaIndex = shallowRef(0);
@@ -60,7 +62,6 @@ async function initialize(options?: {
   schemas?: string[];
   streamOptions?: SchemaStreamOptions;
 }) {
-  const schemas = viewContext.params;
   if (state.value !== "uninitialized" && state.value !== "ready") {
     console.warn(
       "can only initialize when the state is `ready` or `uninitialized`.",
@@ -198,6 +199,13 @@ const menuItems = computed(
           diagram.showAllColumns = !diagram.showAllColumns;
         },
       },
+      {
+        label: "About",
+        icon: "info",
+        command() {
+          aboutDialogVisible.value = true;
+        },
+      },
       ...(isDevMode
         ? ([
           { separator: true },
@@ -216,11 +224,19 @@ const menuItems = computed(
 
 <template>
   <div class="schema-diagram-container" ref="container">
-    <SchemaDiagram :menu-items="menuItems" ref="schemaDiagram" />
+    <SchemaDiagram :menu-items="menuItems" ref="schemaDiagram">
+      <!-- <template #panel-bottom-right-end> -->
+      <!--   <button class="btn btn-fab btn-flat" @click="aboutDialogVisible = true"> -->
+      <!--     <span class="material-symbols-outlined">help</span> -->
+      <!--     <span class="title-popup">Help</span> -->
+      <!--   </button> -->
+      <!-- </template> -->
+    </SchemaDiagram>
 
     <div class="diagram-blur-overlay" v-if="state === 'initializing' || state === 'aborting'" />
 
     <ExportDialog v-model:visible="exportDialogVisible" />
+    <AboutDialog v-model:visible="aboutDialogVisible" />
 
     <Dialog :visible="state === 'initializing' || state === 'aborting'" :closable="false" header="Loading schema...">
       <div class="loading-progress" :style="{ '--width': `${progress * 100}%` }" />

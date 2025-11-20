@@ -28,6 +28,7 @@ import {
   type Dimensions,
   type GraphNode,
   type NodeProps,
+  useNode,
 } from "@vue-flow/core";
 import { defineComponent, type PropType } from "vue";
 import { mapActions, mapGetters } from "pinia";
@@ -83,9 +84,6 @@ export default defineComponent({
       }
       return nodes;
     },
-    node() {
-      return this.getNode(this.id)!;
-    },
   },
 
   methods: {
@@ -113,13 +111,24 @@ export default defineComponent({
       };
     },
     recalculate() {
-      this.applyNodeChanges([
-        {
-          id: this.id,
-          type: "dimensions",
-          dimensions: this.calculateDimensions(),
-        },
-      ]);
+      this.setNodes((nodes) => {
+        return nodes.map((node) => {
+          if (node.id === this.id) {
+            return {
+              ...node,
+              dimensions: this.calculateDimensions(),
+            }
+          }
+          return node;
+        });
+      })
+      // this.applyNodeChanges([
+      //   {
+      //     id: this.id,
+      //     type: "dimensions",
+      //     dimensions: this.calculateDimensions(),
+      //   },
+      // ]);
     },
     handleContextMenu(event: MouseEvent) {
       return;
@@ -136,8 +145,13 @@ export default defineComponent({
         },
       ]);
     },
-    recalculateIfNodeIsChild(node: Node<EntityStructure>) {
-      if (node.parentNode === this.id) {
+    recalculateIfNodeIsChild(nodes: Node<EntityStructure>[]) {
+      const shouldCalculate = nodes.some((node) => node.parentNode === this.id);
+      if (shouldCalculate) {
+        console.log('recalculate me!!', this.id, nodes.map((n) => ({
+          nodeId: n.id,
+          parentNodeId: n.parentNode,
+        })))
         this.recalculate();
       }
     },
@@ -145,27 +159,30 @@ export default defineComponent({
 
   mounted() {
     this.emitter.on("force-recalculate-schemas", this.recalculate);
-    this.emitter.on("node-updated-hidden", this.recalculateIfNodeIsChild);
+    this.emitter.on("nodes-updated-hidden", this.recalculateIfNodeIsChild);
     const { off } = this.onNodeDragStop((event) =>
-      this.recalculateIfNodeIsChild(event.node),
+      this.recalculateIfNodeIsChild([event.node]),
     );
     this.unsubscribe = off;
   },
 
   beforeUnmount() {
     this.emitter.off("force-recalculate-schemas", this.recalculate);
-    this.emitter.off("node-updated-hidden", this.recalculateIfNodeIsChild);
+    this.emitter.off("nodes-updated-hidden", this.recalculateIfNodeIsChild);
     this.unsubscribe?.();
   },
 
   setup() {
-    const { addSelectedNodes, getNode, applyNodeChanges, onNodeDragStop } =
+    const { addSelectedNodes, getNode, applyNodeChanges, onNodeDragStop, setNodes } =
       useVueFlow();
+    const { node } = useNode();
 
     return {
       Position,
       addSelectedNodes,
       getNode,
+      setNodes,
+      node,
       applyNodeChanges,
       onNodeDragStop,
     };

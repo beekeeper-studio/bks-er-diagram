@@ -26,7 +26,13 @@ import {
   type ColumnStructure,
   type TableEntityStructure,
 } from "@/composables/useSchemaDiagram";
-import { Handle, Position, useNode, useVueFlow, type NodeProps } from "@vue-flow/core";
+import {
+  Handle,
+  Position,
+  useNode,
+  useVueFlow,
+  type NodeProps,
+} from "@vue-flow/core";
 import { mapActions, mapGetters } from "pinia";
 import { defineComponent, type PropType } from "vue";
 import Columns from "@/components/Columns.vue";
@@ -112,11 +118,12 @@ export default defineComponent({
       }
       this.$bks.openMenu(event, [
         {
-          label: `Hide ${this.selectedEntities.length > 1 ? "selected entities" : this.data.name}`,
+          label:
+            this.selectedEntities.length > 1
+              ? "Hide selected entities"
+              : `Hide ${this.data.name}`,
           command: () => {
-            for (const entity of this.selectedEntities) {
-              this.toggleHideEntity(entity, true);
-            }
+            this.toggleHideEntity(this.selectedEntities, true);
           },
         },
       ]);

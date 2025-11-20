@@ -65,7 +65,7 @@ export type EdgeData = ColumnReference;
 export type GenerateImageOptions = {
   /** The scale of the image. Defaults to 1. */
   scale?: number;
-}
+};
 
 export function getNodeId(type: "schema", entity: SchemaEntity): string;
 export function getNodeId(type: "table", entity: TableEntity): string;
@@ -154,7 +154,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   const emitter = mitt<{
     "force-recalculate-schemas": void;
-    "node-updated-hidden": GraphNode<EntityStructure>;
+    "nodes-updated-hidden": GraphNode<EntityStructure>[];
   }>();
 
   // Obtain the ts type
@@ -165,7 +165,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   /**
    * Since we do some calculations when updating the entities, it is
-   * recommended to use this as a readonly ref and use `addEntities` to modify it.
+   * recommended to use this as a readonly ref and the utility functions.
    **/
   const entitiesRef = ref<EntityStructure[]>([]);
   const showAllColumns = shallowRef(
@@ -290,31 +290,88 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     });
   }
 
-  function toggleHideEntity(entity: Entity, hide?: boolean) {
-    const node = nodes.value.find(
-      // @ts-expect-error
-      (n) => n.id === getNodeId(entity.type, entity),
-    );
-    if (node) {
-      let affectedNode: GraphNode<EntityStructure> | undefined;
+  async function toggleHideEntity(
+    entities: TableEntity[] | TableEntity,
+    hide?: boolean,
+  ) {
+    if (!Array.isArray(entities)) {
+      entities = [entities];
+    }
+
+    const affectedNodes: GraphNode<TableEntityStructure>[] = [];
+    const shouldShowSchema = new Set<string>();
+
+    for (const entity of entities) {
+      const selectedNode = nodes.value.find(
+        (n) => n.id === getNodeId("table", entity),
+      ) as GraphNode<TableEntityStructure>;
+
+      if (!selectedNode) {
+        continue;
+      }
+
       setNodes((nodes) => {
-        return nodes.map((n) => {
-          if (n.id === node.id) {
-            const shouldHide = typeof hide === "boolean" ? hide : !n.hidden;
-            n.hidden = shouldHide;
-            n.selected = false;
-            affectedNode = n;
+        return nodes.map((node) => {
+          // Dont modify if it's a parent node (a.k.a schema entity).
+          if (node.isParent) {
+            return node;
           }
-          return n;
+
+          // Dont modify if it's not the currently selected node.
+          if (node.id !== selectedNode.id) {
+            // But if this node is not hidden, the parent should not be
+            // hidden too.
+            if (node.parentNode && !node.hidden) {
+              shouldShowSchema.add(node.parentNode);
+            }
+            return node;
+          }
+
+          // It's the currently selected node from here onwards.
+
+          const shouldHide =
+            typeof hide === "boolean" ? hide : !node.hidden;
+
+          if (node.parentNode && !shouldHide) {
+            shouldShowSchema.add(node.parentNode);
+          }
+
+          affectedNodes.push(node);
+
+          return {
+            ...node,
+            hidden: shouldHide,
+            selected: false,
+          };
         });
       });
-      if (affectedNode) {
-        emitter.emit("node-updated-hidden", affectedNode);
-      }
+    }
+
+    // Loop again for hiding/showing schemas if needed
+    setNodes((nodes) => {
+      return nodes.map((node) => {
+        // Schema is always parent
+        if (node.isParent) {
+          return {
+            ...node,
+            hidden: !shouldShowSchema.has(node.id),
+            selected: false,
+          };
+        }
+        return node;
+      });
+    });
+
+    if (affectedNodes.length > 0) {
+      nextTick(() => {
+        emitter.emit("nodes-updated-hidden", affectedNodes);
+      });
     }
   }
 
-  async function generateImage(options?: GenerateImageOptions): Promise<string> {
+  async function generateImage(
+    options?: GenerateImageOptions,
+  ): Promise<string> {
     generatingImage.value = true;
     await nextTick();
 

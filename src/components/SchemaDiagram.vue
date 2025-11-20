@@ -71,10 +71,8 @@
         </Menu>
 
         <ZoomControls />
-        <button class="btn btn-fab btn-flat">
-          <span class="material-symbols-outlined">help</span>
-          <span class="title-popup">Help</span>
-        </button>
+
+        <slot name="panel-bottom-right-end"></slot>
       </Panel>
     </VueFlow>
   </div>
@@ -124,19 +122,21 @@ export default defineComponent({
   computed: {
     ...mapGetters(useSchemaDiagram, ["generatingImage"]),
     hiddenEntitiesAsMenuItems(): MenuItem[] {
-      return this.diagram.hiddenEntities.map((entity) => ({
-        label:
-          entity.type === "table"
-            ? entity.schema
-              ? `${entity.schema}.${entity.name}`
-              : entity.name
-            : entity.name,
-        icon: entity.type === "table" ? "grid_on" : "folder",
-        class: entity.type === "table" ? "table" : "schema",
-        command: () => {
-          this.diagram.toggleHideEntity(entity, false);
-        },
-      }));
+      return this.diagram.hiddenEntities
+        .filter((entity) => entity.type !== "schema")
+        .map((entity) => ({
+          label:
+            entity.type === "table"
+              ? entity.schema
+                ? `${entity.schema}.${entity.name}`
+                : entity.name
+              : entity.name,
+          icon: entity.type === "table" ? "grid_on" : "folder",
+          class: entity.type === "table" ? "table" : "schema",
+          command: () => {
+            this.diagram.toggleHideEntity(entity, false);
+          },
+        }));
     },
   },
 
