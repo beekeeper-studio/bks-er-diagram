@@ -64,9 +64,6 @@ export function addSvgBelowPng(options: AddSvgBelowPngOptions): Promise<string> 
     const normalizePng = (b64: string) =>
       b64.startsWith("data:") ? b64 : `data:image/png;base64,${b64}`;
 
-    const svgBase64 = btoa(unescape(encodeURIComponent(options.svgBase64)));
-    const svgDataUrl = `data:image/svg+xml;base64,${svgBase64}`;
-
     let loaded = 0;
     const onLoad = () => {
       loaded++;
@@ -121,7 +118,7 @@ export function addSvgBelowPng(options: AddSvgBelowPngOptions): Promise<string> 
     imgSvg.onerror = onError;
 
     imgPng.src = normalizePng(options.pngBase64);
-    imgSvg.src = svgDataUrl;
+    imgSvg.src = options.svgBase64;
   });
 }
 

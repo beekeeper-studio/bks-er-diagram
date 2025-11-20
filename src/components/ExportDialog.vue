@@ -94,11 +94,17 @@ export default defineComponent({
     async initialize() {
       this.nonscaledImage = "";
       this.state = "generating";
-      const png = await this.generatePng({
-        scale: 1,
-      });
-      this.nonscaledImage = png;
-      this.state = "ready";
+      try {
+        const png = await this.generatePng({
+          scale: 1,
+        });
+        this.nonscaledImage = png;
+        this.state = "ready";
+      } catch (e) {
+        this.error = e.message || e.toString();
+        console.error(e);
+        this.state = "idle";
+      }
     },
 
     async getImageAtScale() {
