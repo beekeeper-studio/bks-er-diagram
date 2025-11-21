@@ -157,8 +157,9 @@ export default defineComponent({
   mounted() {
     this.emitter.on("force-recalculate-schemas", this.recalculate);
     this.emitter.on("nodes-updated-hidden", this.recalculateIfNodeIsChild);
-    const { off } = this.onNodeDragStop((event) =>
-      this.recalculateIfNodeIsChild([event.node]),
+    const { off } = this.onNodeDragStop((event) => {
+      this.recalculateIfNodeIsChild(event.nodes)
+    },
     );
     this.unsubscribe = off;
   },

@@ -18,7 +18,6 @@ import {
   removeNotificationListener,
   request,
   setTabTitle,
-  type PluginViewContext,
 } from "@beekeeperstudio/plugin";
 import { useSchema, type SchemaStreamOptions } from "./composables/useSchema";
 import { useDebug } from "./composables/useDebug";
@@ -46,9 +45,8 @@ const progress = computed(
     (1 / totalSchema.value) * schemaStore.progress,
 );
 
-let viewContext: PluginViewContext;
-// FIXME add a new type from @beekeeperstudio/plugin
-let connection: Awaited<ReturnType<typeof getConnectionInfo>>;
+// // FIXME add a new type from @beekeeperstudio/plugin
+// let connection: Awaited<ReturnType<typeof getConnectionInfo>>;
 
 let abortController: AbortController | undefined;
 
@@ -129,13 +127,18 @@ const container = useTemplateRef<HTMLElement>("container");
 const containerWidth = ref(0);
 const containerHeight = ref(0);
 
-async function initializeByViewContext() {
+async function start() {
+  const connection = await getConnectionInfo();
+  const viewContext = await getViewContext();
   const databaseType = connection.databaseType;
+
   if (!isSupportedDatabase(databaseType)) {
     return;
   }
 
   if (viewContext.command === "openTableStructureSchema") {
+    // @ts-expect-error
+    setTabTitle(viewContext.params.entity.name);
     await initialize({
       streamOptions: {
         table: {
@@ -146,8 +149,6 @@ async function initializeByViewContext() {
         },
       },
     });
-    // @ts-expect-error
-    await setTabTitle(viewContext.params.entity.name);
     return;
   }
 
@@ -160,33 +161,38 @@ async function initializeByViewContext() {
 }
 
 onMounted(async () => {
-  viewContext = await getViewContext();
-  connection = await getConnectionInfo();
-
-  await initializeByViewContext();
+  await start();
 
   const el = container.value;
   containerWidth.value = el!.clientWidth;
   containerHeight.value = el!.clientHeight;
 
   /** @ts-expect-error FIXME not fully typed */
-  addNotificationListener("tablesChanged", initializeByViewContext);
+  addNotificationListener("tablesChanged", start);
 });
 
 onUnmounted(() => {
-  removeNotificationListener("tablesChanged", initializeByViewContext);
+  removeNotificationListener("tablesChanged", start);
 });
 
 const menuItems = computed(
   () =>
     [
       {
+        label: "Autolayout",
+        icon: "view_cozy",
+        command() {
+          diagram.layout();
+          nextTick(() => diagram.layoutSchema());
+        },
+      },
+      {
         label: "Reload schema",
         icon: "refresh",
         command() {
           diagram.$reset();
           schemaStore.$reset();
-          nextTick(() => initializeByViewContext());
+          nextTick(() => start());
         },
       },
       {
