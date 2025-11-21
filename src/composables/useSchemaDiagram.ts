@@ -7,56 +7,12 @@ import {
   getTransformForBounds,
 } from "@vue-flow/core";
 import { defineStore } from "pinia";
-import { computed, nextTick, ref, shallowRef, watch, type Ref } from "vue";
+import { computed, nextTick, ref, shallowRef, type Ref } from "vue";
 import { useLayout } from "./useLayout";
 import _ from "lodash";
 import mitt from "mitt";
 import { generateImageFromElement } from "@/utils/image";
-
-export type TableEntity = {
-  name: string;
-  schema?: string;
-};
-
-export type SchemaEntity = {
-  name: string;
-};
-
-export type Entity = TableEntity | SchemaEntity;
-
-export type Column = {
-  entity: TableEntity;
-  name: string;
-};
-
-export type ColumnStructure = Column & {
-  type?: string;
-  handleId: string;
-  hasReferences: boolean;
-  primaryKey: boolean;
-  foreignKey: boolean;
-  uniqueKey: boolean;
-  nullable: boolean;
-  ordinalPosition: number;
-};
-
-export type EntityStructure = TableEntityStructure | SchemaEntityStructure;
-
-export type TableEntityStructure = TableEntity & {
-  type: "table";
-  columns: ColumnStructure[];
-  isComposite: boolean;
-};
-
-export type SchemaEntityStructure = SchemaEntity & {
-  type: "schema";
-  entities: EntityStructure[];
-};
-
-export type ColumnReference = {
-  from: Column;
-  to: Column;
-};
+import type { Column, ColumnReference, Entity, EntityStructure, SchemaEntity, TableEntity, TableEntityStructure } from "@/utils/schema";
 
 export type NodeData = EntityStructure;
 
@@ -150,6 +106,12 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     getSelectedNodes,
     viewportRef,
     addSelectedNodes,
+    toObject,
+    setMinZoom,
+    panOnDrag,
+    elevateEdgesOnSelect,
+    panOnScroll,
+    zoomOnPinch,
   } = useVueFlow();
 
   const emitter = mitt<{
@@ -163,21 +125,12 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   const { layout: layoutGenerator } = useLayout();
 
-  /**
-   * Since we do some calculations when updating the entities, it is
-   * recommended to use this as a readonly ref and the utility functions.
-   **/
+  /** Using this outside the store is readonly! */
   const entitiesRef = ref<EntityStructure[]>([]);
+  /** Using this outside the store is readonly! */
+  const keysRef = ref<ColumnReference[]>([]);
   const showAllColumns = shallowRef(
     localStorage.getItem("show-all-columns") === "true",
-  );
-
-  const selectedNodes = computed<string[]>(() =>
-    getSelectedNodes.value.map((node) => node.id),
-  );
-
-  const selectedEntities = computed<EntityStructure[]>(() =>
-    getSelectedNodes.value.map((node) => node.data),
   );
 
   /**
@@ -228,7 +181,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
    * Add entities to the diagram. Use `await` or `.then()` to wait for the
    * nodes to be added.
    **/
-  async function addEntities(entities: EntityStructure | EntityStructure[]) {
+  function addEntities(entities: EntityStructure | EntityStructure[]) {
     if (!Array.isArray(entities)) {
       entities = [entities];
     }
@@ -237,7 +190,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     addNodes(nodes);
   }
 
-  async function addKeys(references: ColumnReference | ColumnReference[]) {
+  function addKeys(references: ColumnReference | ColumnReference[]) {
     if (!Array.isArray(references)) {
       references = [references];
     }
@@ -273,7 +226,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     });
   }
 
-  async function layoutSchema() {
+  function layoutSchema() {
     emitter.emit("force-recalculate-schemas");
     setNodes((nodes) => {
       let offset = 0;
@@ -288,6 +241,13 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
         return node;
       });
     });
+  }
+
+  async function toggleHideSelectedEntities(hide?: boolean) {
+    await toggleHideEntity(
+      getSelectedNodes.value.map(node => node.data),
+      hide
+    );
   }
 
   async function toggleHideEntity(
@@ -416,12 +376,24 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
   }
 
   function $reset() {
-    entitiesRef.value = [];
     $resetVueFlow();
+    initialize();
   }
 
-  watch(showAllColumns, async () => {
+  function initialize() {
+    entitiesRef.value = [];
+    setMinZoom(0.01);
+    panOnDrag.value = [1, 2];
+    elevateEdgesOnSelect.value = true;
+    panOnScroll.value = true;
+    zoomOnPinch.value = true;
+  }
+
+  async function toggleShowAllColumns(showAll?: boolean) {
+    showAllColumns.value = showAll ?? !showAllColumns.value;
+
     localStorage.setItem("show-all-columns", showAllColumns.value.toString());
+
     // Wait for Vue to update the DOM before measuring
     await nextTick();
 
@@ -466,35 +438,45 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
         return node;
       }),
     );
+
     emitter.emit("force-recalculate-schemas");
-  });
+  }
 
   return {
-    entities: entitiesRef,
-    nodes,
+    entities: computed(() => entitiesRef.value),
+    hiddenEntities,
+    showAllColumns: computed(() => showAllColumns.value),
     addEntities,
+    toggleHideEntity,
+    toggleHideSelectedEntities,
+    selectEntity,
+    toggleShowAllColumns,
+
+    keys: computed(() => keysRef.value),
     addKeys,
-    $reset,
-    fitView,
+
     zoomValue,
     zoomLevel,
     zoomIn,
     zoomOut,
     zoomTo,
+
     layout,
     layoutSchema,
-    selectEntity,
-    selectedNodes,
-    selectedEntities,
-    thicknessMultipler,
-    showAllColumns,
+
+    generateImage,
+    generatingImage: computed(() => generatingImage.value),
+
+    nodes,
+    fitView,
     viewport: computed(() => viewport.value),
     rectOfDiagram,
     setViewport,
-    hiddenEntities,
-    toggleHideEntity,
+    thicknessMultipler,
+    toObject,
     emitter,
-    generatePng: generateImage,
-    generatingImage: computed(() => generatingImage.value),
+
+    initialize,
+    $reset,
   };
 });

@@ -21,11 +21,8 @@
 </template>
 
 <script lang="ts">
-import {
-  useSchemaDiagram,
-  type ColumnStructure,
-  type TableEntityStructure,
-} from "@/composables/useSchemaDiagram";
+import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
+import type { TableEntityStructure, ColumnStructure } from "@/utils/schema";
 import {
   Handle,
   Position,
@@ -64,11 +61,7 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapGetters(useSchemaDiagram, [
-      "selectedNodes",
-      "selectedEntities",
-      "showAllColumns",
-    ]),
+    ...mapGetters(useSchemaDiagram, [ "showAllColumns" ]),
     columns() {
       return this.data.columns.sort(
         (a, b) => a.ordinalPosition - b.ordinalPosition,
@@ -97,7 +90,7 @@ export default defineComponent({
       }
       if (
         this.connectedNodes.some(
-          (node) => this.selectedNodes.includes(node) && node !== this.id,
+          (node) => this.selectedNodes.find((n) => n.id === node) && node !== this.id,
         )
       ) {
         return true;
@@ -110,7 +103,7 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions(useSchemaDiagram, ["toggleHideEntity"]),
+    ...mapActions(useSchemaDiagram, ["toggleHideSelectedEntities"]),
     handleContextMenu(event: MouseEvent) {
       // event.preventDefault();
       if (!this.selected) {
@@ -119,11 +112,11 @@ export default defineComponent({
       this.$bks.openMenu(event, [
         {
           label:
-            this.selectedEntities.length > 1
+            this.selectedNodes.length > 1
               ? "Hide selected entities"
               : `Hide ${this.data.name}`,
           command: () => {
-            this.toggleHideEntity(this.selectedEntities, true);
+            this.toggleHideSelectedEntities(true);
           },
         },
       ]);
@@ -134,12 +127,13 @@ export default defineComponent({
   },
 
   setup() {
-    const { getConnectedEdges, addSelectedNodes } = useVueFlow();
+    const { getConnectedEdges, addSelectedNodes, getSelectedNodes } = useVueFlow();
     const { node } = useNode<TableEntityStructure>();
     return {
       Position,
       getConnectedEdges,
       addSelectedNodes,
+      selectedNodes: getSelectedNodes,
       node,
     };
   },

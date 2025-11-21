@@ -14,9 +14,8 @@
 import {
   getNodeId,
   useSchemaDiagram,
-  type EntityStructure,
-  type SchemaEntityStructure,
 } from "@/composables/useSchemaDiagram";
+import type { EntityStructure, SchemaEntityStructure } from "@/utils/schema";
 import {
   Handle,
   Position,

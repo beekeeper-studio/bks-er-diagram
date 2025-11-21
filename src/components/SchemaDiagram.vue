@@ -2,8 +2,7 @@
   <div class="schema-diagram" :style="{
     '--thickness-multipler': generatingImage ? 1 : thicknessMultipler,
   }">
-    <VueFlow class="diagram" :min-zoom="0.01" elevate-edges-on-select pan-on-scroll
-      selection-on-drag :pan-on-drag="[1, 2]" zoom-on-pinch>
+    <VueFlow class="diagram">
       <Background variant="dots" pattern-color="var(--bg-pattern-color)" />
 
       <template #edge-floating="props">
@@ -86,7 +85,7 @@ import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
 import Tree from "primevue/tree";
 import Popover from "primevue/popover";
-import { mapActions, mapGetters, mapState } from "pinia";
+import { mapActions, mapGetters } from "pinia";
 import ZoomControls from "./ZoomControls.vue";
 import { getNodeId, useSchemaDiagram } from "@/composables/useSchemaDiagram";
 import { defineComponent, type PropType } from "vue";

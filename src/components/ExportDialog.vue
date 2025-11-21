@@ -90,12 +90,12 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions(useSchemaDiagram, ["generatePng"]),
+    ...mapActions(useSchemaDiagram, ["generateImage"]),
     async initialize() {
       this.nonscaledImage = "";
       this.state = "generating";
       try {
-        const png = await this.generatePng({
+        const png = await this.generateImage({
           scale: 1,
         });
         this.nonscaledImage = png;
@@ -113,7 +113,7 @@ export default defineComponent({
         return this.nonscaledImage;
       }
       // Otherwise generate at the selected scale
-      return await this.generatePng({ scale: this.scale });
+      return await this.generateImage({ scale: this.scale });
     },
 
     async copyToClipboard() {

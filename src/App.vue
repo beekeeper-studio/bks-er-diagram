@@ -9,10 +9,8 @@ import {
   useTemplateRef,
 } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
-import {
-  type ColumnReference,
-  useSchemaDiagram,
-} from "@/composables/useSchemaDiagram";
+import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
+import type { ColumnReference } from "@/utils/schema";
 import {
   addNotificationListener,
   getConnectionInfo,
@@ -58,6 +56,7 @@ function abort() {
   state.value = "aborting";
   abortController?.abort();
 }
+
 async function initialize(options?: {
   schemas?: string[];
   streamOptions?: SchemaStreamOptions;
@@ -71,14 +70,16 @@ async function initialize(options?: {
 
   state.value = "initializing";
 
+  diagram.initialize();
+
   try {
     const allKeys: ColumnReference[] = [];
     abortController = new AbortController();
 
-    async function processStream(iter: ReturnType<typeof stream>) {
+    async function processStream(iter: ReturnType<typeof schemaStore.stream>) {
       for await (const { entities, keys } of iter) {
         allKeys.push(...keys);
-        await diagram.addEntities(entities);
+        diagram.addEntities(entities);
         await nextTick();
         diagram.layout();
       }
@@ -109,12 +110,13 @@ async function initialize(options?: {
       );
     }
 
-    await diagram.addKeys(allKeys);
+    diagram.addKeys(allKeys);
     await nextTick();
     await new Promise((resolve) => setTimeout(resolve, 250));
     diagram.layout();
     await nextTick();
-    await diagram.layoutSchema();
+    diagram.layoutSchema();
+    await nextTick();
     diagram.fitView();
   } catch (e) {
     console.error(e);
@@ -179,10 +181,12 @@ const menuItems = computed(
   () =>
     [
       {
-        label: "Reload",
+        label: "Reload schema",
         icon: "refresh",
         command() {
-          initializeByViewContext();
+          diagram.$reset();
+          schemaStore.$reset();
+          nextTick(() => initializeByViewContext());
         },
       },
       {
@@ -196,7 +200,7 @@ const menuItems = computed(
         label: "Show all columns",
         icon: diagram.showAllColumns ? "check" : "",
         command() {
-          diagram.showAllColumns = !diagram.showAllColumns;
+          diagram.toggleShowAllColumns();
         },
       },
       {
