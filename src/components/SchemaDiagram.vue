@@ -1,9 +1,9 @@
 <template>
   <div class="schema-diagram" :style="{
-    '--thickness-multipler': generatingImage ? 1 : diagram.thicknessMultipler,
+    '--thickness-multipler': generatingImage ? 1 : thicknessMultipler,
   }">
-    <VueFlow class="diagram" :min-zoom="0.01" :nodes="diagram.nodes" :edges="diagram.edges" elevate-edges-on-select
-      pan-on-scroll selection-on-drag :pan-on-drag="[1, 2]" zoom-on-pinch>
+    <VueFlow class="diagram" :min-zoom="0.01" elevate-edges-on-select pan-on-scroll
+      selection-on-drag :pan-on-drag="[1, 2]" zoom-on-pinch>
       <Background variant="dots" pattern-color="var(--bg-pattern-color)" />
 
       <template #edge-floating="props">
@@ -44,31 +44,32 @@
       </Panel>
 
       <Panel position="bottom-right" class="panel">
-        <button class="btn btn-fab btn-flat" @click="toggleHiddenEntitiesMenu"
-          v-show="diagram.hiddenEntities.length > 0">
+        <button class="btn btn-fab btn-flat" @click="toggleHiddenEntitiesPopover" v-show="hiddenEntities.length > 0">
           <span class="material-symbols-outlined"
             style="font-variation-settings: &quot;FILL&quot; 1">visibility_off</span>
         </button>
-        <Menu class="hidden-entities-menu" :model="hiddenEntitiesAsMenuItems" popup ref="hiddenEntitiesMenu">
-          <template #start>
-            <div style="margin: 0.5rem; margin-bottom: 0.25rem">
-              <h2 style="
+        <Popover ref="hiddenEntitiesPopover">
+          <Menu class="hidden-entities-menu" :model="hiddenEntitiesAsMenuItems">
+            <template #start>
+              <div style="margin: 0.5rem; margin-bottom: 0.25rem">
+                <h2 style="
                   margin: 0;
                   font-size: 1em;
                   margin-bottom: 0.25rem;
                   font-weight: normal;
                 ">
-                Hidden entities
-              </h2>
-              <span style="color: var(--text-muted); font-style: italic">Click to unhide entity</span>
-            </div>
-          </template>
-          <template #itemicon="{ item }">
-            <span class="material-symbols-outlined menu-icon">{{
-              item.icon
+                  Hidden entities
+                </h2>
+                <span style="color: var(--text-muted); font-style: italic">Click to unhide entity</span>
+              </div>
+            </template>
+            <template #itemicon="{ item }">
+              <span class="material-symbols-outlined menu-icon">{{
+                item.icon
               }}</span>
-          </template>
-        </Menu>
+            </template>
+          </Menu>
+        </Popover>
 
         <ZoomControls />
 
@@ -80,17 +81,18 @@
 
 <script lang="ts">
 import { VueFlow, Panel } from "@vue-flow/core";
-import ZoomControls from "./ZoomControls.vue";
 import { Background } from "@vue-flow/background";
+import Menu from "primevue/menu";
+import type { MenuItem } from "primevue/menuitem";
+import Tree from "primevue/tree";
+import Popover from "primevue/popover";
+import { mapActions, mapGetters, mapState } from "pinia";
+import ZoomControls from "./ZoomControls.vue";
 import { getNodeId, useSchemaDiagram } from "@/composables/useSchemaDiagram";
 import { defineComponent, type PropType } from "vue";
 import FloatingEdge from "@/components/FloatingEdge.vue";
 import TableNode from "@/components/TableNode.vue";
-import Menu from "primevue/menu";
-import type { MenuItem } from "primevue/menuitem";
 import SchemaNode from "./SchemaNode.vue";
-import Tree from "primevue/tree";
-import { mapGetters } from "pinia";
 
 export default defineComponent({
   components: {
@@ -103,6 +105,7 @@ export default defineComponent({
     SchemaNode,
     Menu,
     Tree,
+    Popover,
   },
 
   props: {
@@ -120,9 +123,9 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapGetters(useSchemaDiagram, ["generatingImage"]),
+    ...mapGetters(useSchemaDiagram, ["generatingImage", "hiddenEntities", "thicknessMultipler"]),
     hiddenEntitiesAsMenuItems(): MenuItem[] {
-      return this.diagram.hiddenEntities
+      return this.hiddenEntities
         .filter((entity) => entity.type !== "schema")
         .map((entity) => ({
           label:
@@ -133,30 +136,36 @@ export default defineComponent({
               : entity.name,
           icon: entity.type === "table" ? "grid_on" : "folder",
           class: entity.type === "table" ? "table" : "schema",
-          command: () => {
-            this.diagram.toggleHideEntity(entity, false);
+          command: async () => {
+            await this.toggleHideEntity(entity, false);
+            this.selectEntity(entity);
+            // @ts-expect-error
+            this.$refs.hiddenEntitiesPopover.alignOverlay();
           },
         }));
     },
   },
 
+  watch: {
+    hiddenEntities() {
+      if (this.hiddenEntities.length === 0) {
+        // @ts-expect-error
+        this.$refs.hiddenEntitiesPopover.hide();
+      }
+    },
+  },
+
   methods: {
+    ...mapActions(useSchemaDiagram, ['toggleHideEntity', 'selectEntity']),
     getNodeId,
     toggleMenu(event: MouseEvent) {
       // @ts-expect-error
       this.$refs.menu.toggle(event);
     },
-    toggleHiddenEntitiesMenu(event: MouseEvent) {
+    toggleHiddenEntitiesPopover(event: MouseEvent) {
       // @ts-expect-error
-      this.$refs.hiddenEntitiesMenu.toggle(event);
+      this.$refs.hiddenEntitiesPopover.toggle(event);
     },
-  },
-
-  setup() {
-    const diagram = useSchemaDiagram();
-    return {
-      diagram,
-    };
   },
 });
 </script>

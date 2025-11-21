@@ -147,9 +147,9 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomIn,
     zoomOut,
     zoomTo: vueFlowZoomTo,
-    getNodes,
     getSelectedNodes,
     viewportRef,
+    addSelectedNodes,
   } = useVueFlow();
 
   const emitter = mitt<{
@@ -334,7 +334,8 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
         return {
           ...node,
           hidden: shouldHide,
-          selected: false,
+          // Deselect node if hidden
+          selected: shouldHide ? false : node.selected,
         };
       });
     });
@@ -344,10 +345,12 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
       return nodes.map((node) => {
         // Schema is always parent
         if (node.isParent) {
+          const shouldHide = !shouldShowSchema.has(node.id);
           return {
             ...node,
-            hidden: !shouldShowSchema.has(node.id),
-            selected: false,
+            hidden: shouldHide,
+            // Deselect node if hidden
+            selected: shouldHide ? false : node.selected,
           };
         }
         return node;
@@ -355,9 +358,15 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     });
 
     if (affectedNodes.length > 0) {
-      nextTick(() => {
-        emitter.emit("nodes-updated-hidden", affectedNodes);
-      });
+      await nextTick();
+      emitter.emit("nodes-updated-hidden", affectedNodes);
+    }
+  }
+
+  function selectEntity(entity: EntityStructure) {
+    const node = nodes.value.find((n) => n.id === getNodeId(entity.type, entity))
+    if (node) {
+      addSelectedNodes([node]);
     }
   }
 
@@ -463,7 +472,6 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
   return {
     entities: entitiesRef,
     nodes,
-    edges,
     addEntities,
     addKeys,
     $reset,
@@ -475,7 +483,7 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     zoomTo,
     layout,
     layoutSchema,
-    getNodes,
+    selectEntity,
     selectedNodes,
     selectedEntities,
     thicknessMultipler,

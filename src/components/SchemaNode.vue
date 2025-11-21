@@ -150,10 +150,6 @@ export default defineComponent({
     recalculateIfNodeIsChild(nodes: Node<EntityStructure>[]) {
       const shouldCalculate = nodes.some((node) => node.parentNode === this.id);
       if (shouldCalculate) {
-        console.log('recalculate me!!', this.id, nodes.map((n) => ({
-          nodeId: n.id,
-          parentNodeId: n.parentNode,
-        })))
         this.recalculate();
       }
     },

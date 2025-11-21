@@ -1,0 +1,11 @@
+:root {
+  --p-popover-gutter: 0.5rem;
+  --p-popover-arrow-offset: 1rem;
+  --p-popover-background: color-mix(in srgb,
+      var(--theme-base) 6%,
+      var(--query-editor-bg));
+  --p-popover-color: var(--text);
+  --p-popover-border-color: transparent;
+  --p-popover-border-radius: 8px;
+  --p-popover-box-shadow: 0 0 0.5rem var(--theme-bg);
+}
