@@ -21,7 +21,10 @@ import { mapActions, mapGetters } from "pinia";
 
 export default defineComponent({
   computed: {
-    ...mapGetters(useSchemaDiagram, ["zoomLevel"]),
+    ...mapGetters(useSchemaDiagram, ["viewport"]),
+    zoomLevel() {
+      return Math.round(this.viewport.zoom * 100) + "%";
+    },
   },
   methods: {
     ...mapActions(useSchemaDiagram, ["zoomTo", "zoomOut", "zoomIn"]),

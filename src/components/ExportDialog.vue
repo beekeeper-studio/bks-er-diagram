@@ -84,7 +84,7 @@ export default defineComponent({
   watch: {
     visible(visible) {
       if (visible) {
-        this.initialize();
+        this.$nextTick(() => this.initialize());
       }
     },
   },

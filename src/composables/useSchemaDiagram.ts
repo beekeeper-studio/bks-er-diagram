@@ -14,6 +14,18 @@ import mitt from "mitt";
 import { generateImageFromElement } from "@/utils/image";
 import type { Column, ColumnReference, Entity, EntityStructure, SchemaEntity, TableEntity, TableEntityStructure } from "@/utils/schema";
 
+export type DiagramState = {
+  version: 1;
+  entities: {
+    id: string;
+    position: {
+      x: number;
+      y: number;
+    };
+    hidden: boolean;
+  }[];
+}
+
 export type NodeData = EntityStructure;
 
 export type EdgeData = ColumnReference;
@@ -91,32 +103,36 @@ function generateEdges(references: ColumnReference[]): Edge<EdgeData>[] {
 
 export const useSchemaDiagram = defineStore("schema-diagram", () => {
   const {
-    $reset: $resetVueFlow,
-    addNodes,
-    setNodes,
     nodes: untypedNodes,
-    addEdges,
     edges,
-    fitView,
-    viewport,
-    setViewport,
-    zoomIn,
-    zoomOut,
-    zoomTo: vueFlowZoomTo,
     getSelectedNodes,
+    viewport,
     viewportRef,
-    addSelectedNodes,
-    toObject,
-    setMinZoom,
     panOnDrag,
     elevateEdgesOnSelect,
     panOnScroll,
     zoomOnPinch,
+
+    addNodes,
+    setNodes,
+    addEdges,
+    addSelectedNodes,
+    zoomIn,
+    zoomOut,
+    zoomTo: vueFlowZoomTo,
+    setMinZoom,
+    setViewport,
+    fitView,
+    findNode,
+
+    onNodeDragStop,
+    $reset: $resetVueFlow,
   } = useVueFlow();
 
   const emitter = mitt<{
     "force-recalculate-schemas": void;
     "nodes-updated-hidden": GraphNode<EntityStructure>[];
+    "position-changed": void;
   }>();
 
   // Obtain the ts type
@@ -127,55 +143,9 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   /** Using this outside the store is readonly! */
   const entitiesRef = ref<EntityStructure[]>([]);
-  /** Using this outside the store is readonly! */
-  const keysRef = ref<ColumnReference[]>([]);
   const showAllColumns = shallowRef(
     localStorage.getItem("show-all-columns") === "true",
   );
-
-  /**
-   * You can make things thicker when user zooms out with this multipler. To
-   * use it, multiply the desired thickness with this multiplier.
-   *
-   * @example
-   *
-   * - My border is 2px thick
-   * - But when zoomed out, it's hardly visible
-   *
-   * No worries!
-   *
-   * ```html
-   * <div class="node" :style="{ 'border-width': 'calc(2px * ${thicknessMultipler})' }"></div>
-   * ```
-   */
-  const thicknessMultipler = computed(() => {
-    // https://www.desmos.com/calculator/yyzftehsmc
-    //
-    // x = 1/y - 1/2 + 0.95
-    //
-    // where:
-    // x = multiplier
-    // y = zoom
-    return 1 / viewport.value.zoom - 1 / 2 + 0.95;
-  });
-
-  const rectOfDiagram = computed(() => getRectOfNodes(nodes.value));
-
-  const hiddenEntities = computed(() => {
-    const ret = [];
-    for (const node of nodes.value as GraphNode<EntityStructure>[]) {
-      if (node.hidden) {
-        ret.push(node.data);
-      }
-    }
-    return ret;
-  });
-
-  const zoomLevel = computed<string>(
-    () => Math.round(viewport.value.zoom * 100) + "%",
-  );
-
-  const zoomValue = computed(() => viewport.value.zoom);
 
   /**
    * Add entities to the diagram. Use `await` or `.then()` to wait for the
@@ -195,6 +165,53 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
       references = [references];
     }
     addEdges(generateEdges(references));
+  }
+
+  function getDiagramState(): DiagramState {
+    const entities: DiagramState['entities'] = [];
+
+    for (const entity of entitiesRef.value) {
+      const id = getNodeId(entity.type, entity);
+      const node = findNode(id);
+      if (node) {
+        entities.push({
+          id,
+          hidden: node.hidden ?? false,
+          position: {
+            x: node.position.x,
+            y: node.position.y,
+          },
+        });
+      }
+    }
+
+    return {
+      version: 1,
+      entities,
+    }
+  }
+
+  function setDiagramState(state: DiagramState) {
+    setNodes((nodes) => {
+      return nodes.map((node) => {
+        const entity = state.entities.find((e) => e.id === node.id)
+
+        if (!entity) {
+          return node;
+        }
+
+        return {
+          ...node,
+          position: {
+            x: entity.position.x,
+            y: entity.position.y,
+          },
+          hidden: entity.hidden,
+        }
+      })
+    })
+
+    nextTick(() => emitter.emit("force-recalculate-schemas"));
   }
 
   function zoomTo(zoom: number) {
@@ -380,13 +397,25 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     initialize();
   }
 
+  let unsubscribe: Function | undefined;
+
   function initialize() {
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = undefined;
+    }
+
     entitiesRef.value = [];
-    setMinZoom(0.01);
     panOnDrag.value = [1, 2];
     elevateEdgesOnSelect.value = true;
     panOnScroll.value = true;
     zoomOnPinch.value = true;
+    setMinZoom(0.01);
+
+    const { off } = onNodeDragStop(() => {
+      emitter.emit("position-changed");
+    });
+    unsubscribe = off;
   }
 
   async function toggleShowAllColumns(showAll?: boolean) {
@@ -444,39 +473,64 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
 
   return {
     entities: computed(() => entitiesRef.value),
-    hiddenEntities,
+    hiddenEntities: computed(() => {
+      const ret = [];
+      for (const node of nodes.value as GraphNode<EntityStructure>[]) {
+        if (node.hidden) {
+          ret.push(node.data);
+        }
+      }
+      return ret;
+    }),
     showAllColumns: computed(() => showAllColumns.value),
-    addEntities,
-    toggleHideEntity,
-    toggleHideSelectedEntities,
-    selectEntity,
-    toggleShowAllColumns,
-
-    keys: computed(() => keysRef.value),
-    addKeys,
-
-    zoomValue,
-    zoomLevel,
-    zoomIn,
-    zoomOut,
-    zoomTo,
-
-    layout,
-    layoutSchema,
-
-    generateImage,
     generatingImage: computed(() => generatingImage.value),
-
-    nodes,
-    fitView,
     viewport: computed(() => viewport.value),
-    rectOfDiagram,
-    setViewport,
-    thicknessMultipler,
-    toObject,
+    rectOfDiagram: computed(() => getRectOfNodes(nodes.value)),
+    /**
+     * You can make things thicker when user zooms out with this multipler. To
+     * use it, multiply the desired thickness with this multiplier.
+     *
+     * @example
+     *
+     * - My border is 2px thick
+     * - But when zoomed out, it's hardly visible
+     *
+     * No worries!
+     *
+     * ```html
+     * <div class="node" :style="{ 'border-width': 'calc(2px * ${thicknessMultipler})' }"></div>
+     * ```
+     */
+    thicknessMultipler: computed(() => {
+      // https://www.desmos.com/calculator/yyzftehsmc
+      //
+      // x = 1/y - 1/2 + 0.95
+      //
+      // where:
+      // x = multiplier
+      // y = zoom
+      return 1 / viewport.value.zoom - 1 / 2 + 0.95;
+    }),
+    nodes,
     emitter,
 
     initialize,
+    addEntities,
+    selectEntity,
+    setDiagramState,
+    addKeys,
+    toggleHideEntity,
+    toggleHideSelectedEntities,
+    toggleShowAllColumns,
+    zoomIn,
+    zoomOut,
+    zoomTo,
+    layout,
+    layoutSchema,
+    generateImage,
+    setViewport,
+    fitView,
+    getDiagramState,
     $reset,
   };
 });

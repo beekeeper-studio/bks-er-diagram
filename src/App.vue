@@ -7,6 +7,7 @@ import {
   ref,
   shallowRef,
   useTemplateRef,
+  watch,
 } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
 import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
@@ -14,10 +15,13 @@ import type { ColumnReference } from "@/utils/schema";
 import {
   addNotificationListener,
   getConnectionInfo,
+  getData,
   getViewContext,
   removeNotificationListener,
   request,
+  setData,
   setTabTitle,
+  type PluginViewContext,
 } from "@beekeeperstudio/plugin";
 import { useSchema, type SchemaStreamOptions } from "./composables/useSchema";
 import { useDebug } from "./composables/useDebug";
@@ -45,17 +49,17 @@ const progress = computed(
     (1 / totalSchema.value) * schemaStore.progress,
 );
 
-// // FIXME add a new type from @beekeeperstudio/plugin
-// let connection: Awaited<ReturnType<typeof getConnectionInfo>>;
-
 let abortController: AbortController | undefined;
+let viewContext: PluginViewContext | undefined;
+// FIXME add a new type from @beekeeperstudio/plugin
+let connection: Awaited<ReturnType<typeof getConnectionInfo>>;
 
 function abort() {
   state.value = "aborting";
   abortController?.abort();
 }
 
-async function initialize(options?: {
+async function loadDiagram(options?: {
   schemas?: string[];
   streamOptions?: SchemaStreamOptions;
 }) {
@@ -111,9 +115,16 @@ async function initialize(options?: {
     diagram.addKeys(allKeys);
     await nextTick();
     await new Promise((resolve) => setTimeout(resolve, 250));
-    diagram.layout();
-    await nextTick();
-    diagram.layoutSchema();
+
+    const diagramState = await getDiagramState();
+    if (diagramState) {
+      diagram.setDiagramState(diagramState);
+    } else {
+      diagram.layout();
+      await nextTick();
+      diagram.layoutSchema();
+    }
+
     await nextTick();
     diagram.fitView();
   } catch (e) {
@@ -127,19 +138,18 @@ const container = useTemplateRef<HTMLElement>("container");
 const containerWidth = ref(0);
 const containerHeight = ref(0);
 
-async function start() {
-  const connection = await getConnectionInfo();
-  const viewContext = await getViewContext();
+async function initialize() {
   const databaseType = connection.databaseType;
 
   if (!isSupportedDatabase(databaseType)) {
     return;
   }
 
-  if (viewContext.command === "openTableStructureSchema") {
-    // @ts-expect-error
-    setTabTitle(viewContext.params.entity.name);
-    await initialize({
+  diagram.emitter.on("position-changed", saveDiagramState);
+  diagram.emitter.on("nodes-updated-hidden", saveDiagramState);
+
+  if (viewContext!.command === "openTableStructureSchema") {
+    await loadDiagram({
       streamOptions: {
         table: {
           // @ts-expect-error
@@ -149,30 +159,64 @@ async function start() {
         },
       },
     });
-    return;
+  } else {
+    const schemas = await request({ name: "getSchemas" }).then((ss) =>
+      ss
+        .filter((schema: string) => schema !== connection.defaultSchema)
+        .filter((schema: string) => !isSystemSchema(databaseType, schema)),
+    );
+    await loadDiagram({ schemas: [connection.defaultSchema, ...schemas] });
   }
+}
 
-  const schemas = await request({ name: "getSchemas" }).then((ss) =>
-    ss
-      .filter((schema: string) => schema !== connection.defaultSchema)
-      .filter((schema: string) => !isSystemSchema(databaseType, schema)),
-  );
-  await initialize({ schemas: [connection.defaultSchema, ...schemas] });
+function reload() {
+  diagram.emitter.off("position-changed", saveDiagramState);
+  diagram.emitter.off("nodes-updated-hidden", saveDiagramState);
+  diagram.$reset();
+  schemaStore.$reset();
+  nextTick(() => initialize());
+}
+
+let diagramStateId: string;
+
+async function saveDiagramState() {
+  return await setData(`diagram-state-${diagramStateId}`, diagram.getDiagramState());
+}
+
+async function getDiagramState() {
+  return await getData(`diagram-state-${diagramStateId}`);
 }
 
 onMounted(async () => {
-  await start();
+  connection = await getConnectionInfo();
+  viewContext = await getViewContext();
+
+  const connectionId = `${connection.id}:${connection.workspaceId}` as const;
+  let viewId = "default";
+
+  if (viewContext.command === "openSpecificEntity") {
+    // @ts-expect-error
+    setTabTitle(viewContext.params.entity.name);
+    // @ts-expect-error
+    viewId = `${viewContext.params.entity.type}:${viewContext.params.entity.schema}:${viewContext.params.entity.name}` as const;
+  } else {
+    setTabTitle(connection.databaseName);
+  }
+
+  diagramStateId = `${connectionId}:${viewId}`;
+
+  await initialize();
 
   const el = container.value;
   containerWidth.value = el!.clientWidth;
   containerHeight.value = el!.clientHeight;
 
   /** @ts-expect-error FIXME not fully typed */
-  addNotificationListener("tablesChanged", start);
+  addNotificationListener("tablesChanged", reload);
 });
 
 onUnmounted(() => {
-  removeNotificationListener("tablesChanged", start);
+  removeNotificationListener("tablesChanged", reload);
 });
 
 const menuItems = computed(
@@ -181,18 +225,19 @@ const menuItems = computed(
       {
         label: "Autolayout",
         icon: "view_cozy",
-        command() {
+        async command() {
           diagram.layout();
-          nextTick(() => diagram.layoutSchema());
+          await nextTick();
+          diagram.layoutSchema();
+          await nextTick();
+          saveDiagramState();
         },
       },
       {
         label: "Reload schema",
         icon: "refresh",
         command() {
-          diagram.$reset();
-          schemaStore.$reset();
-          nextTick(() => start());
+          reload();
         },
       },
       {
