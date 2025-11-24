@@ -20,7 +20,7 @@ import {
   removeNotificationListener,
   request,
   setData,
-  setTabTitle,
+  setTabTitle as rawSetTabTitle,
   type PluginViewContext,
 } from "@beekeeperstudio/plugin";
 import { useSchema, type SchemaStreamOptions } from "./composables/useSchema";
@@ -32,6 +32,10 @@ import DiagramScrollbar from "./components/DiagramScrollbar.vue";
 import Dialog from "primevue/dialog";
 import ExportDialog from "@/components/ExportDialog.vue";
 import AboutDialog from "@/components/AboutDialog.vue";
+
+async function setTabTitle(title: string) {
+  await rawSetTabTitle(title.trimEnd() + " - ERD");
+}
 
 const diagram = useSchemaDiagram();
 const schemaStore = useSchema();
@@ -194,7 +198,7 @@ onMounted(async () => {
   const connectionId = `${connection.id}:${connection.workspaceId}` as const;
   let viewId = "default";
 
-  if (viewContext.command === "openSpecificEntity") {
+  if (viewContext.command === "showOneTable") {
     // @ts-expect-error
     setTabTitle(viewContext.params.entity.name);
     // @ts-expect-error
