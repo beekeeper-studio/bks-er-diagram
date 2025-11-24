@@ -227,8 +227,8 @@ const menuItems = computed(
   () =>
     [
       {
-        label: "Autolayout",
-        icon: "view_cozy",
+        label: "Auto Layout",
+        icon: "auto_awesome_mosaic",
         async command() {
           diagram.layout();
           await nextTick();
@@ -238,10 +238,24 @@ const menuItems = computed(
         },
       },
       {
-        label: "Reload schema",
+        label: "Fit to Screen",
+        icon: "fit_screen",
+        command() {
+          diagram.fitView();
+        },
+      },
+      { separator: true },
+      {
+        label: "Reload Schema",
         icon: "refresh",
         command() {
           reload();
+        },
+      },
+      {
+        label: diagram.showAllColumns ? "Show Keys Only" : "Show All Columns",
+        command() {
+          diagram.toggleShowAllColumns();
         },
       },
       {
@@ -251,13 +265,7 @@ const menuItems = computed(
           exportDialogVisible.value = true;
         },
       },
-      {
-        label: "Show all columns",
-        icon: diagram.showAllColumns ? "check" : "",
-        command() {
-          diagram.toggleShowAllColumns();
-        },
-      },
+      { separator: true },
       {
         label: "About",
         icon: "info",
