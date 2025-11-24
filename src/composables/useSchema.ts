@@ -208,25 +208,79 @@ export const useSchema = defineStore("schema", {
             if ("table" in options) {
               for (const reference of references) {
                 if (!entitiesEqual(reference.from.entity, table)) {
-                  const fromEntity: EntityStructure = {
+                  const fromTable: EntityStructure = {
                     ...reference.from.entity,
                     type: "table",
                     columns: [],
                     isComposite: false,
                   };
-                  await this.fillEntityStructureWithColumns(fromEntity);
-                  await this.findReferencesAndUpdateEntity(fromEntity);
-                  entityBatch.push(fromEntity);
+                  await this.fillEntityStructureWithColumns(fromTable);
+                  await this.findReferencesAndUpdateEntity(fromTable);
+                  entityBatch.push(fromTable);
+                  this.entityStructureMap.set(
+                    getEntityStructureId("table", fromTable),
+                    fromTable,
+                  );
+
+                  if (fromTable.schema) {
+                    const foundSchema = this.findEntityStructure("schema", {
+                      name: fromTable.schema,
+                    });
+
+                    let fromSchema = foundSchema;
+
+                    if (!fromSchema) {
+                      fromSchema = {
+                        name: fromTable.schema,
+                        type: "schema",
+                        entities: [],
+                      };
+                      entityBatch.push(fromSchema);
+                      this.entityStructureMap.set(
+                        getEntityStructureId("schema", fromSchema),
+                        fromSchema,
+                      );
+                    }
+
+                    fromSchema.entities.push(fromTable);
+                  }
                 } else if (!entitiesEqual(reference.to.entity, table)) {
-                  const toEntity: EntityStructure = {
+                  const toTable: EntityStructure = {
                     ...reference.to.entity,
                     type: "table",
                     columns: [],
                     isComposite: false,
                   };
-                  await this.fillEntityStructureWithColumns(toEntity);
-                  await this.findReferencesAndUpdateEntity(toEntity);
-                  entityBatch.push(toEntity);
+                  await this.fillEntityStructureWithColumns(toTable);
+                  await this.findReferencesAndUpdateEntity(toTable);
+                  entityBatch.push(toTable);
+                  this.entityStructureMap.set(
+                    getEntityStructureId("table", toTable),
+                    toTable,
+                  );
+
+                  if (toTable.schema) {
+                    const foundSchema = this.findEntityStructure("schema", {
+                      name: toTable.schema,
+                    });
+
+                    let toSchema = foundSchema;
+
+                    if (!toSchema) {
+                      toSchema = {
+                        name: toTable.schema,
+                        type: "schema",
+                        entities: [],
+                      };
+                      entityBatch.push(toSchema);
+                      this.entityStructureMap.set(
+                        getEntityStructureId("schema", toSchema),
+                        toSchema,
+                      );
+                    }
+
+                    toSchema.entities.push(toTable);
+                  }
                 }
               }
             }
