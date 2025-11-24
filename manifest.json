@@ -20,14 +20,20 @@
     ],
     "menu": [
       {
-        "command": "openMainView",
+        "command": "showAllEntities",
         "name": "Open ER Diagram",
         "view": "main-view",
         "placement": "menubar.tools"
       },
       {
-        "command": "openTableStructureSchema",
-        "name": "Open ER Diagram",
+        "command": "showOneTable",
+        "name": "View ERD",
+        "view": "main-view",
+        "placement": "entity.table.context"
+      },
+      {
+        "command": "showOneTable",
+        "name": "View ERD",
         "view": "main-view",
         "placement": "structure.statusbar.menu"
       }

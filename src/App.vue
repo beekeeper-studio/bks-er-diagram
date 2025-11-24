@@ -148,7 +148,7 @@ async function initialize() {
   diagram.emitter.on("position-changed", saveDiagramState);
   diagram.emitter.on("nodes-updated-hidden", saveDiagramState);
 
-  if (viewContext!.command === "openTableStructureSchema") {
+  if (viewContext!.command === "showOneTable") {
     await loadDiagram({
       streamOptions: {
         table: {

@@ -205,7 +205,7 @@ export const useSchema = defineStore("schema", {
           this.progress = (i + 0.66) / tables.length;
 
           try {
-            if ("entity" in options) {
+            if ("table" in options) {
               for (const reference of references) {
                 if (!entitiesEqual(reference.from.entity, table)) {
                   const fromEntity: EntityStructure = {
