@@ -1,8 +1,8 @@
 import {
   getHandleId,
-  type Column,
   type EdgeData,
 } from "@/composables/useSchemaDiagram";
+import type { Column } from "@/utils/schema";
 import { Position, type GraphNode } from "@vue-flow/core";
 import _ from "lodash";
 

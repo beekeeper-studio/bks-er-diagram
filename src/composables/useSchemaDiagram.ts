@@ -12,7 +12,9 @@ import { useLayout } from "./useLayout";
 import _ from "lodash";
 import mitt from "mitt";
 import { generateImageFromElement } from "@/utils/image";
-import type { Column, ColumnReference, Entity, EntityStructure, SchemaEntity, TableEntity, TableEntityStructure } from "@/utils/schema";
+import type { Column, ColumnReference, Entity, EntityStructure, SchemaEntity, TableEntity, TableEntityStructure, ColumnStructure } from "@/utils/schema";
+
+export type { ColumnStructure };
 
 export type DiagramState = {
   version: 1;
@@ -171,7 +173,9 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
     const entities: DiagramState['entities'] = [];
 
     for (const entity of entitiesRef.value) {
-      const id = getNodeId(entity.type, entity);
+      const id = entity.type === "schema"
+        ? getNodeId("schema", entity as SchemaEntity)
+        : getNodeId("table", entity as TableEntity);
       const node = findNode(id);
       if (node) {
         entities.push({
@@ -341,7 +345,10 @@ export const useSchemaDiagram = defineStore("schema-diagram", () => {
   }
 
   function selectEntity(entity: EntityStructure) {
-    const node = nodes.value.find((n) => n.id === getNodeId(entity.type, entity))
+    const id = entity.type === "schema"
+      ? getNodeId("schema", entity as SchemaEntity)
+      : getNodeId("table", entity as TableEntity);
+    const node = nodes.value.find((n) => n.id === id)
     if (node) {
       addSelectedNodes([node]);
     }

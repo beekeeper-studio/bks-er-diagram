@@ -7,10 +7,9 @@ import {
   ref,
   shallowRef,
   useTemplateRef,
-  watch,
 } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram.vue";
-import { useSchemaDiagram } from "@/composables/useSchemaDiagram";
+import { useSchemaDiagram, type DiagramState } from "@/composables/useSchemaDiagram";
 import type { ColumnReference } from "@/utils/schema";
 import {
   addNotificationListener,
@@ -165,7 +164,8 @@ async function initialize() {
       },
     });
   } else if (viewContext!.command === "showOneSchema"){
-    await loadDiagram({ schemas: [viewContext.params.entity.name] });
+    // @ts-expect-error
+    await loadDiagram({ schemas: [viewContext?.params?.entity.name] });
   } else {
     const schemas = await request({ name: "getSchemas" }).then((ss) =>
       ss
@@ -190,8 +190,12 @@ async function saveDiagramState() {
   return await setData(`diagram-state-${diagramStateId}`, diagram.getDiagramState());
 }
 
-async function getDiagramState() {
-  return await getData(`diagram-state-${diagramStateId}`);
+async function getDiagramState(): Promise<DiagramState | null> {
+  const data = await getData(`diagram-state-${diagramStateId}`);
+  if (data && typeof data === 'object' && 'version' in data && 'entities' in data) {
+    return data as DiagramState;
+  }
+  return null;
 }
 
 /** Everyhing that should be done once goes here */

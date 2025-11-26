@@ -21,6 +21,7 @@ import { getHandleId, type EdgeData } from "@/composables/useSchemaDiagram";
 import { useSchema } from "@/composables/useSchema";
 import { mapActions } from "pinia";
 import CrowsFootMarker from "@/components/CrowsFootMarker.vue";
+import type { Theme } from "@/plugins/Theme";
 
 type Props = EdgeProps<EdgeData>;
 
@@ -30,7 +31,18 @@ export default defineComponent({
 
   components: { CrowsFootMarker },
 
-  inject: ["calculatedTheme"],
+  inject: {
+    theme: {
+      from: "theme",
+      default: () => ({
+        edgeStroke: "#000",
+        highlightedEdgeStroke: "#000",
+        selectedEdgeStroke: "#000",
+        diagramBg: "#000",
+        appTheme: {},
+      }) as Theme,
+    }
+  },
 
   props: {
     id: {
@@ -65,13 +77,14 @@ export default defineComponent({
     // To make html-to-image work, many of these svg's props are not styled
     // from css directly
     stroke() {
+      const theme = this.theme as Theme;
       if (this.selected) {
-        return this.calculatedTheme.selectedEdgeStroke;
+        return theme.selectedEdgeStroke;
       }
       if (this.highlighted) {
-        return this.calculatedTheme.highlightedEdgeStroke;
+        return theme.highlightedEdgeStroke;
       }
-      return this.calculatedTheme.edgeStroke;
+      return theme.edgeStroke;
     },
 
     edgeParams() {

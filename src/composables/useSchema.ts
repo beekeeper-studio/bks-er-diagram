@@ -482,7 +482,7 @@ export const useSchema = defineStore("schema", {
         const fromColumns = Array.isArray(key.fromColumn)
           ? key.fromColumn
           : [key.fromColumn];
-        fromColumns.forEach((column) => {
+        fromColumns.forEach((column: string) => {
           const columnStructure = this.findColumnStrucuture({
             entity: {
               name: entity.name,

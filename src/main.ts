@@ -11,7 +11,7 @@ import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
 import { useContextMenu } from "./composables/useContextMenu";
 import type { MenuItem } from "primevue/menuitem";
-import Theme from "@/plugins/Theme";
+import ThemePlugin from "@/plugins/Theme";
 
 if (import.meta.env.DEV) {
   document.addEventListener("keydown", (e) => {
@@ -37,7 +37,7 @@ app.use({
     };
   },
 });
-app.use(Theme);
+app.use(ThemePlugin);
 app.config.globalProperties.$pluralize = pluralize;
 app.config.globalProperties.$openExternal = openExternal;
 app.mount("#app");

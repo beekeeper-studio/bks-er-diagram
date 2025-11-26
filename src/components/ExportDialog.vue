@@ -101,7 +101,7 @@ export default defineComponent({
         this.nonscaledImage = png;
         this.state = "ready";
       } catch (e) {
-        this.error = e.message || e.toString();
+        this.error = (e as Error).message || String(e);
         console.error(e);
         this.state = "idle";
       }
@@ -128,7 +128,7 @@ export default defineComponent({
           },
         });
       } catch (e) {
-        this.error = e.message || e.toString();
+        this.error = (e as Error).message || String(e);
       }
 
       this.copyState = "copied";
@@ -156,7 +156,7 @@ export default defineComponent({
           },
         });
       } catch (e) {
-        this.error = e.message || e.toString();
+        this.error = (e as Error).message || String(e);
       }
 
       this.downloadState = "downloaded";

@@ -6,9 +6,17 @@ import {
 import tinycolor from "tinycolor2";
 import { ref, type Plugin } from "vue";
 
+export type Theme = {
+  edgeStroke: string;
+  highlightedEdgeStroke: string;
+  selectedEdgeStroke: string;
+  diagramBg: string;
+  appTheme: AppTheme;
+};
+
 /** The generated colors are used for SVGs since html-to-image cannot pickup
  * the colors from the CSS variables. */
-const theme = ref({
+const theme = ref<Theme>({
   edgeStroke: "#000",
   highlightedEdgeStroke: "#000",
   selectedEdgeStroke: "#000",
@@ -18,15 +26,15 @@ const theme = ref({
 
 function calculateTheme(theme: AppTheme) {
   const edgeStroke = tinycolor
-    .mix(theme.palette.themeBase, theme.palette.themeBg, 90)
+    .mix(theme.palette.themeBase || "#000", theme.palette.themeBg || "#fff", 90)
     .toHexString();
   const highlightedEdgeStroke = tinycolor
-    .mix(theme.palette.themeBase, theme.palette.themeBg, 45)
+    .mix(theme.palette.themeBase || "#000", theme.palette.themeBg || "#fff", 45)
     .toHexString();
   const selectedEdgeStroke = tinycolor
-    .mix(theme.palette.themePrimary, theme.palette.themeBg, 30)
+    .mix(theme.palette.themePrimary || "#0000ff", theme.palette.themeBg || "#fff", 30)
     .toHexString();
-  const diagramBg = theme.palette.queryEditorBg!;
+  const diagramBg = theme.palette.queryEditorBg || "#fff";
 
   return {
     edgeStroke,
@@ -55,10 +63,9 @@ export function getTheme() {
   return theme.value;
 }
 
-const Theme: Plugin = {
+const ThemePlugin: Plugin = {
   install(app) {
-    // TODO rename to theme
-    app.provide("calculatedTheme", theme);
+    app.provide("theme", theme);
   },
 };
-export default Theme;
+export default ThemePlugin;
