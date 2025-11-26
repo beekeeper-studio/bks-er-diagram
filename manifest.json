@@ -26,6 +26,12 @@
         "placement": "menubar.tools"
       },
       {
+        "command": "showOneSchema",
+        "name": "View ERD",
+        "view": "main-view",
+        "placement": "entity.schema.context"
+      },
+      {
         "command": "showOneTable",
         "name": "View ERD",
         "view": "main-view",

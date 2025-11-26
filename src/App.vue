@@ -142,6 +142,7 @@ const container = useTemplateRef<HTMLElement>("container");
 const containerWidth = ref(0);
 const containerHeight = ref(0);
 
+/** Unlike onMounted(), this can be called multiple times via reload(). */
 async function initialize() {
   const databaseType = connection.databaseType;
 
@@ -163,6 +164,8 @@ async function initialize() {
         },
       },
     });
+  } else if (viewContext!.command === "showOneSchema"){
+    await loadDiagram({ schemas: [viewContext.params.entity.name] });
   } else {
     const schemas = await request({ name: "getSchemas" }).then((ss) =>
       ss
@@ -191,6 +194,7 @@ async function getDiagramState() {
   return await getData(`diagram-state-${diagramStateId}`);
 }
 
+/** Everyhing that should be done once goes here */
 onMounted(async () => {
   connection = await getConnectionInfo();
   viewContext = await getViewContext();
@@ -203,6 +207,9 @@ onMounted(async () => {
     setTabTitle(viewContext.params.entity.name);
     // @ts-expect-error
     viewId = `${viewContext.params.entity.type}:${viewContext.params.entity.schema}:${viewContext.params.entity.name}` as const;
+  } else if (viewContext.command === "showOneSchema"){
+    // @ts-expect-error
+    setTabTitle(viewContext.params.entity.name);
   } else {
     setTabTitle(connection.databaseName);
   }
