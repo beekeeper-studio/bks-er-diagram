@@ -6,7 +6,7 @@
     "url": "https://beekeeperstudio.io"
   },
   "description": "Interactive ER Diagram viewer for Beekeeper Studio to visualize and explore relational database schemas",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "icon": "account_tree",
   "manifestVersion": 1,
   "capabilities": {

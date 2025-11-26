@@ -21,6 +21,7 @@ import {
   setData,
   setTabTitle as rawSetTabTitle,
   type PluginViewContext,
+  getAppInfo,
 } from "@beekeeperstudio/plugin";
 import { useSchema, type SchemaStreamOptions } from "./composables/useSchema";
 import { useDebug } from "./composables/useDebug";
@@ -31,6 +32,8 @@ import DiagramScrollbar from "./components/DiagramScrollbar.vue";
 import Dialog from "primevue/dialog";
 import ExportDialog from "@/components/ExportDialog.vue";
 import AboutDialog from "@/components/AboutDialog.vue";
+import lt from "semver/functions/lt";
+import manifest from "../manifest.json";
 
 async function setTabTitle(title: string) {
   await rawSetTabTitle(title.trimEnd() + " - ERD");
@@ -43,6 +46,7 @@ const state = ref<"uninitialized" | "initializing" | "aborting" | "ready">(
 );
 const exportDialogVisible = shallowRef(false);
 const aboutDialogVisible = shallowRef(false);
+const warningDialogVisible = shallowRef(false);
 const debug = useDebug();
 const totalSchema = shallowRef(1);
 const loadingSchemaIndex = shallowRef(0);
@@ -163,7 +167,7 @@ async function initialize() {
         },
       },
     });
-  } else if (viewContext!.command === "showOneSchema"){
+  } else if (viewContext!.command === "showOneSchema") {
     // @ts-expect-error
     await loadDiagram({ schemas: [viewContext?.params?.entity.name] });
   } else {
@@ -200,6 +204,19 @@ async function getDiagramState(): Promise<DiagramState | null> {
 
 /** Everyhing that should be done once goes here */
 onMounted(async () => {
+  // Check version compatibility
+  if (!import.meta.env.DEV) {
+    try {
+      const appInfo = await getAppInfo()
+      if (lt(appInfo.version, "5.5.0")) {
+        warningDialogVisible.value = true;
+      }
+    } catch (e) {
+      console.warn("FAILED to compare app version");
+      console.error(e);
+    }
+  }
+
   connection = await getConnectionInfo();
   viewContext = await getViewContext();
 
@@ -211,7 +228,7 @@ onMounted(async () => {
     setTabTitle(viewContext.params.entity.name);
     // @ts-expect-error
     viewId = `${viewContext.params.entity.type}:${viewContext.params.entity.schema}:${viewContext.params.entity.name}` as const;
-  } else if (viewContext.command === "showOneSchema"){
+  } else if (viewContext.command === "showOneSchema") {
     // @ts-expect-error
     setTabTitle(viewContext.params.entity.name);
   } else {
@@ -312,6 +329,13 @@ const menuItems = computed(
     </SchemaDiagram>
 
     <div class="diagram-blur-overlay" v-if="state === 'initializing' || state === 'aborting'" />
+
+    <Dialog v-model:visible="warningDialogVisible" :closable="false" position="top" :modal="true" :draggable="false" dismissable-mask>
+      {{ manifest.name }} requires Beekeeper Studio <strong>5.5.0+</strong>. Please upgrade.
+      <template #footer>
+        <button class="btn" @click="warningDialogVisible = false">OK</button>
+      </template>
+    </Dialog>
 
     <ExportDialog v-model:visible="exportDialogVisible" />
     <AboutDialog v-model:visible="aboutDialogVisible" />
