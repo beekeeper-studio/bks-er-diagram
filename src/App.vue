@@ -33,6 +33,7 @@ import Dialog from "primevue/dialog";
 import ExportDialog from "@/components/ExportDialog.vue";
 import AboutDialog from "@/components/AboutDialog.vue";
 import lt from "semver/functions/lt";
+import coerce from "semver/functions/coerce";
 import manifest from "../manifest.json";
 
 async function setTabTitle(title: string) {
@@ -208,7 +209,8 @@ onMounted(async () => {
   if (!import.meta.env.DEV) {
     try {
       const appInfo = await getAppInfo()
-      if (lt(appInfo.version, "5.5.0")) {
+      if (lt(coerce(appInfo.version)!, "5.5.0")) {
+      // if (lt(appInfo.version, "5.5.0")) {
         warningDialogVisible.value = true;
       }
     } catch (e) {
