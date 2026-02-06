@@ -1,7 +1,4 @@
-import type { GetConnectionInfoResponse } from "@beekeeperstudio/plugin";
-
-// FIXME
-type DatabaseType = GetConnectionInfoResponse["result"]["databaseType"];
+import type { DatabaseType } from "@beekeeperstudio/plugin";
 
 type SupportedDatabase = Extract<
   DatabaseType,

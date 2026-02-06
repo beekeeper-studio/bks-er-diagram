@@ -17,11 +17,11 @@ import {
   getData,
   getViewContext,
   removeNotificationListener,
-  request,
   setData,
   setTabTitle as rawSetTabTitle,
   type PluginViewContext,
   getAppInfo,
+  getSchemas,
 } from "@beekeeperstudio/plugin";
 import { useSchema, type SchemaStreamOptions } from "./composables/useSchema";
 import { useDebug } from "./composables/useDebug";
@@ -172,12 +172,16 @@ async function initialize() {
     // @ts-expect-error
     await loadDiagram({ schemas: [viewContext?.params?.entity.name] });
   } else {
-    const schemas = await request({ name: "getSchemas" }).then((ss) =>
+    const schemas = await getSchemas().then((ss) =>
       ss
         .filter((schema: string) => schema !== connection.defaultSchema)
         .filter((schema: string) => !isSystemSchema(databaseType, schema)),
     );
-    await loadDiagram({ schemas: [connection.defaultSchema, ...schemas] });
+    await loadDiagram({
+      schemas: connection.defaultSchema
+        ? [connection.defaultSchema, ...schemas]
+        : schemas,
+    });
   }
 }
 
@@ -210,7 +214,6 @@ onMounted(async () => {
     try {
       const appInfo = await getAppInfo()
       if (lt(coerce(appInfo.version)!, "5.5.0")) {
-      // if (lt(appInfo.version, "5.5.0")) {
         warningDialogVisible.value = true;
       }
     } catch (e) {
@@ -245,7 +248,6 @@ onMounted(async () => {
   containerWidth.value = el!.clientWidth;
   containerHeight.value = el!.clientHeight;
 
-  /** @ts-expect-error FIXME not fully typed */
   addNotificationListener("tablesChanged", reload);
 });
 

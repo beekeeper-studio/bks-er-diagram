@@ -1,4 +1,4 @@
-import "@beekeeperstudio/plugin/dist/eventForwarder.js";
+import "@beekeeperstudio/plugin/dist/eventForwarder";
 import { createApp } from "vue";
 import "@/assets/styles/main.scss";
 import App from "./App.vue";
