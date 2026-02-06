@@ -1,6 +1,6 @@
 {
   "name": "@beekeeperstudio/bks-er-diagram",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Interactive ER Diagram viewer for Beekeeper Studio to visualize and explore relational database schemas",
   "license": "GPL-3.0",
   "type": "module",
