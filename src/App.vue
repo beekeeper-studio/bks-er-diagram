@@ -95,7 +95,7 @@ async function loadDiagram(options?: {
       }
     }
 
-    if (options?.schemas) {
+    if (options?.schemas?.length) {
       totalSchema.value = options.schemas.length;
       for (let i = 0; i < options.schemas.length; i++) {
         loadingSchemaIndex.value = i;
