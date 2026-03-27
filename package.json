@@ -4,6 +4,10 @@
   "description": "Interactive ER Diagram viewer for Beekeeper Studio to visualize and explore relational database schemas",
   "license": "GPL-3.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beekeeper-studio/bks-er-diagram"
+  },
   "main": "dist/main.js",
   "styles": "dist/style.css",
   "files": [
