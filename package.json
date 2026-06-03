@@ -22,7 +22,7 @@
     "test:run": "vitest run"
   },
   "devDependencies": {
-    "@beekeeperstudio/plugin": "^1.6.0",
+    "@beekeeperstudio/plugin": "^1.7.1",
     "@beekeeperstudio/vite-plugin": "^1.0.3",
     "@dagrejs/dagre": "^1.1.5",
     "@material-symbols/font-400": "^0.38.0",

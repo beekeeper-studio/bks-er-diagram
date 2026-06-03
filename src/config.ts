@@ -2,7 +2,7 @@ import type { DatabaseType } from "@beekeeperstudio/plugin";
 
 type SupportedDatabase = Extract<
   DatabaseType,
-  "postgresql" | "mysql" | "sqlite" | "sqlserver" | "oracle" | "duckdb"
+  "postgresql" | "mysql" | "sqlite" | "sqlserver" | "oracle" | "duckdb" | "snowflake"
 >;
 
 const SYSTEM_SCHEMAS: Record<SupportedDatabase, (string | RegExp)[]> = {
@@ -29,6 +29,7 @@ const SYSTEM_SCHEMAS: Record<SupportedDatabase, (string | RegExp)[]> = {
     "APPQOSSYS",
   ],
   duckdb: ["information_schema", "pg_catalog", "duckdb_catalog"],
+  snowflake: ["INFORMATION_SCHEMA"],
 };
 
 export function isSystemSchema(
