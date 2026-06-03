@@ -14,14 +14,14 @@ import type { ColumnReference } from "@/utils/schema";
 import {
   addNotificationListener,
   getConnectionInfo,
-  getData,
+  appStorage,
   getViewContext,
   removeNotificationListener,
-  setData,
   setTabTitle as rawSetTabTitle,
   type PluginViewContext,
   getAppInfo,
   getSchemas,
+  openExternal,
 } from "@beekeeperstudio/plugin";
 import { useSchema, type SchemaStreamOptions } from "./composables/useSchema";
 import { useDebug } from "./composables/useDebug";
@@ -35,6 +35,9 @@ import AboutDialog from "@/components/AboutDialog.vue";
 import lt from "semver/functions/lt";
 import coerce from "semver/functions/coerce";
 import manifest from "../manifest.json";
+import pkg from "../package.json";
+
+const issuesUrl = `${pkg.repository.url}/issues`;
 
 async function setTabTitle(title: string) {
   await rawSetTabTitle(title.trimEnd() + " - ERD");
@@ -48,6 +51,8 @@ const state = ref<"uninitialized" | "initializing" | "aborting" | "ready">(
 const exportDialogVisible = shallowRef(false);
 const aboutDialogVisible = shallowRef(false);
 const warningDialogVisible = shallowRef(false);
+const unsupportedDialogVisible = shallowRef(false);
+const unsupportedDatabase = shallowRef("");
 const debug = useDebug();
 const totalSchema = shallowRef(1);
 const loadingSchemaIndex = shallowRef(0);
@@ -71,15 +76,6 @@ async function loadDiagram(options?: {
   schemas?: string[];
   streamOptions?: SchemaStreamOptions;
 }) {
-  if (state.value !== "uninitialized" && state.value !== "ready") {
-    console.warn(
-      "can only initialize when the state is `ready` or `uninitialized`.",
-    );
-    return;
-  }
-
-  state.value = "initializing";
-
   diagram.initialize();
 
   try {
@@ -151,8 +147,19 @@ async function initialize() {
   const databaseType = connection.databaseType;
 
   if (!isSupportedDatabase(databaseType)) {
+    unsupportedDatabase.value = databaseType;
+    unsupportedDialogVisible.value = true;
     return;
   }
+
+  if (state.value !== "uninitialized" && state.value !== "ready") {
+    console.warn(
+      "can only initialize when the state is `ready` or `uninitialized`.",
+    );
+    return;
+  }
+
+  state.value = "initializing";
 
   diagram.emitter.on("position-changed", saveDiagramState);
   diagram.emitter.on("nodes-updated-hidden", saveDiagramState);
@@ -196,11 +203,11 @@ function reload() {
 let diagramStateId: string;
 
 async function saveDiagramState() {
-  return await setData(`diagram-state-${diagramStateId}`, diagram.getDiagramState());
+  return await appStorage.setItem(`diagram-state-${diagramStateId}`, diagram.getDiagramState());
 }
 
 async function getDiagramState(): Promise<DiagramState | null> {
-  const data = await getData(`diagram-state-${diagramStateId}`);
+  const data = await appStorage.getItem(`diagram-state-${diagramStateId}`);
   if (data && typeof data === 'object' && 'version' in data && 'entities' in data) {
     return data as DiagramState;
   }
@@ -338,6 +345,16 @@ const menuItems = computed(
       {{ manifest.name }} requires Beekeeper Studio <strong>5.5.0+</strong>. Please upgrade.
       <template #footer>
         <button class="btn" @click="warningDialogVisible = false">OK</button>
+      </template>
+    </Dialog>
+
+    <Dialog v-model:visible="unsupportedDialogVisible" :closable="false" position="top" :modal="true" :draggable="false" dismissable-mask>
+      {{ manifest.name }} does not support <strong>{{ unsupportedDatabase }}</strong> databases.
+      <template #footer>
+        <button class="btn" @click="openExternal(issuesUrl)">
+          Report an Issue
+        </button>
+        <button class="btn" @click="unsupportedDialogVisible = false">OK</button>
       </template>
     </Dialog>
 
