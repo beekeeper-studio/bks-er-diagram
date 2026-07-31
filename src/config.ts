@@ -1,8 +1,9 @@
-import type { DatabaseType } from "@beekeeperstudio/plugin";
+import { type DatabaseType } from "@beekeeperstudio/plugin";
 
+/** FIXME use dialect type instead */
 type SupportedDatabase = Extract<
   DatabaseType,
-  "postgresql" | "mysql" | "sqlite" | "sqlserver" | "oracle" | "duckdb" | "snowflake"
+  "postgresql" | "mysql" | "mariadb" | "sqlite" | "libsql" | "sqlserver" | "oracle" | "duckdb" | "snowflake" | ""
 >;
 
 const SYSTEM_SCHEMAS: Record<SupportedDatabase, (string | RegExp)[]> = {
@@ -14,7 +15,9 @@ const SYSTEM_SCHEMAS: Record<SupportedDatabase, (string | RegExp)[]> = {
     /^pg_internal/,
   ],
   mysql: [],
+  mariadb: [],
   sqlite: [],
+  libsql: [],
   sqlserver: ["sys", "INFORMATION_SCHEMA"],
   oracle: [
     "SYS",
